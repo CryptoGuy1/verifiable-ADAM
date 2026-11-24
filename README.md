@@ -2,7 +2,7 @@
 
 Verifiable ADAM investigates whether dependency-aware verification can reduce repeated work compared with a competent expiry-aware cache while preserving the same acceptance rules. Our physical testbed is one Pi 5 and one Pi 4, using CO₂ and light observations.
 
-The software now includes signed synthetic observations, coordinator-signed decisions, individually signed ballots, a deterministic B1 public verifier, a B2 expiry-aware cache, and a separately implemented reference evaluator. A matched replay runner checks B1 and B2 against declared expected outcomes and the reference. These establish a protocol and development corpus, not research novelty, physical accuracy, or hardware performance.
+The software now includes signed synthetic observations, coordinator-signed decisions, individually signed ballots, a deterministic B1 public verifier, a B2 expiry-aware cache, a B3 reverse dependency index, and a separately implemented reference evaluator. A matched replay runner checks B1, B2, and B3 against declared expected outcomes and the reference. These establish a protocol and development corpus, not research novelty, physical accuracy, or hardware performance.
 
 ## Run the signed event demonstration
 
@@ -39,9 +39,20 @@ cargo run --locked -- replay-demo runs/b2-demo
 cargo run --locked -- replay workloads/b2-currentness-v1.json runs/b2-replay
 ```
 
-Each command uses a new output directory and saves a workload, full report, and hash manifest. The frozen workload has 31 synthetic checks covering stable evidence, unrelated updates, exact expiry, historical checks, replacement, malformed claims, revocation, quorum failures, and restart. A replay exits 0 only when B1, B2, the reference, and expected outcomes all agree; mismatch exits 1 and input/operational error exits 2. Run `replay WORKLOAD` without an output directory to print full JSON.
+Each command uses a new output directory and saves a workload, full report, and hash manifest. The frozen workload has 31 synthetic checks covering stable evidence, unrelated updates, exact expiry, historical checks, replacement, malformed claims, revocation, quorum failures, and restart. A replay exits 0 only when B1, B2, B3, the reference, and expected outcomes all agree; mismatch exits 1 and input/operational error exits 2. Run `replay WORKLOAD` without an output directory to print full JSON.
 
 B2 reuses valid signatures and decision-processing results while checking time and required source heads on every decision hit. Its complete policy/registry/content bindings prevent stale cached authorization. It already avoids revalidation for unrelated updates. The report includes cache maintenance, key hashing/normalization, and occupancy counters as well as saved signature work. These are diagnostic counts, not timing or hardware performance measurements. See [the B2 contract](specs/b2-cache.md).
+
+## Run the B3 dependency index prototype
+
+```sh
+cargo run --locked -- dependency-demo runs/b3-demo
+cargo run --locked -- replay workloads/b3-multi-claim-v1.json runs/b3-replay
+```
+
+B3 shares B2's static authentication cache and adds a source-to-claim reverse index. It updates mismatch state only along affected links. It still receives full head snapshots, so change detection and index maintenance are explicitly counted. The frozen 27-step workload exercises multiple logical claims, shared source links, dropout, replacement, authorization changes, and restart.
+
+On this synthetic workload B2 and B3 perform the same 23 signature checks. B3 saves some direct support comparisons but adds snapshot scanning and metadata work. No overall speedup or novelty is established. See [the B3 contract and findings](specs/b3-dependencies.md). Reports use schema version 2, while both workload input formats remain version 1.
 
 ## Code structure
 
@@ -51,13 +62,15 @@ B2 reuses valid signatures and decision-processing results while checking time a
 | `crates/verification` | B1 authentication, source checks, deterministic classification, quorum, currentness |
 | `crates/reference` | Independent rule/currentness evaluator sharing only record validation, encoding, and crypto primitives |
 | `crates/cache` | B2 bounded signature/decision caches, fresh time/head checks, maintenance counters |
-| `crates/replay` | Matched B1/B2/reference checks over trusted ordered snapshots |
+| `crates/dependencies` | B3 reverse source/claim index, snapshot reconciliation, bounded metadata cleanup |
+| `crates/replay` | Matched B1/B2/B3/reference checks over trusted ordered snapshots |
 | `crates/cli` | New demo runs, bounded JSON input, machine-readable verification reports |
 | `specs/protocol-v1.md` | Implemented provisional semantics and exact binary encodings |
 | `specs/next-milestones.md` | Remaining work and baseline fairness constraints |
 | `tests/vectors` | Fixed encoding/hash vector and standard signature-vector coverage |
 | `tests/corpus/demo-v1` | Frozen synthetic bundles, trusted configuration, and expected outcomes |
 | `workloads/b2-currentness-v1.json` | Frozen synthetic currentness and attack replay |
+| `workloads/b3-multi-claim-v1.json` | Frozen synthetic multi-claim dependency replay |
 | `docs` | Build context, hardware inventory, and procurement |
 
 Python will supply acquisition, orchestration, and analysis later. We have not created empty sensor drivers or claimed hardware integration before selecting and receiving the boards. Existing Elsevier IoT source code has not been copied into this project.
@@ -78,6 +91,6 @@ The provisional public rule is an equally weighted mean CO₂ threshold, calcula
 
 Nominal mode requires two matching ballots from three registered logical voters. Explicit degraded mode requires both of two voters. The demo maps three logical voters onto two node labels; it does not demonstrate three physically independent voters or Byzantine fault tolerance.
 
-B3 dependency updates, alternative support, production key provisioning, persistent anti-replay state, live sensor acquisition, network services, audit-log durability, action release, and B4 private proofs are not implemented. B2 is currently an in-memory library used by the replay runner; separate `verify` invocations remain cold B1 checks. Currentness is checked against the caller's trusted snapshot; there is no atomic live check-and-release mechanism yet. A signed false reading can still pass authentication.
+Alternative support, incremental fusion, production key provisioning, persistent anti-replay state, live sensor acquisition, network services, audit-log durability, action release, and B4 private proofs are not implemented. B2 and B3 are currently in-memory libraries used by replay; separate `verify` invocations remain cold B1 checks. Currentness is checked against the caller's trusted snapshot; there is no atomic live check-and-release mechanism yet. A signed false reading can still pass authentication.
 
 See [BUILD_PLAN.md](BUILD_PLAN.md) for the larger checklist and [the next milestones](specs/next-milestones.md) for the implementation sequence.

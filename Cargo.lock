@@ -349,6 +349,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "veri-adam-dependencies"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "veri-adam-cache",
+ "veri-adam-protocol",
+ "veri-adam-reference",
+ "veri-adam-verification",
+]
+
+[[package]]
 name = "veri-adam-protocol"
 version = "0.1.0"
 dependencies = [
@@ -373,6 +384,7 @@ dependencies = [
  "serde",
  "serde_json",
  "veri-adam-cache",
+ "veri-adam-dependencies",
  "veri-adam-protocol",
  "veri-adam-reference",
  "veri-adam-verification",

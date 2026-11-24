@@ -2,13 +2,13 @@
 
 ## Current delivery
 
-The workspace implements B1 public verification, B2 ordinary caching, independent reference outcomes, a matched replay runner, exact signature encoding, and adversarial tests. The frozen 31-check workload and replay CLI are documented in [the B2 contract](b2-cache.md). It is ready for review and further implementation, not for claims of a completed two-Pi experiment. Procurement, power/cooling validation, sensor calibration, and Pi deployment remain open.
+The workspace implements B1 public verification, B2 ordinary caching, the B3 reverse dependency index prototype, independent reference outcomes, a matched replay runner, exact signature encoding, and adversarial tests. The frozen 31-check baseline and 27-check multi-claim workload are documented in [the B2 contract](b2-cache.md) and [the B3 contract](b3-dependencies.md). It is ready for review and further implementation, not for claims of a completed two-Pi experiment. Procurement, power/cooling validation, sensor calibration, and Pi deployment remain open.
 
 ## Ordinary caching before dependency optimization
 
 B2 now retains positive signature results and content-bound decision-processing certificates with required support horizons/checkpoints. Time and required heads are rechecked on every decision hit. Full policy/registry contents are bound even without a version bump. It preserves reuse on unrelated updates and harmless transport reordering. Keep these conventional capabilities in place when comparing B3.
 
-B3 needs an explicitly additional operation, such as a reverse index for affected claims or incremental evaluation of shared computations. If B2 already has the same mechanism, compare against that stronger baseline and report equivalence. Count dependency-index construction, memory, update propagation, and lookups as well as signature and rule work. Stable, sparse, bursty, and shared-support workloads may favor either strategy.
+B3 now adds a reverse index for affected cached claims. It shares B2's static authentication/cache layer and counts full-snapshot change detection, index admission, propagation, lookups, and cleanup. It does not yet add incremental fusion or alternative support. Initial development counts show equal B2/B3 signature work, with additional B3 snapshot/index overhead. If a stronger ordinary baseline has the same mechanism, compare against it and report equivalence. Stable, sparse, bursty, and shared-support workloads may favor either strategy.
 
 Both strategies must use the same policy, trusted checkpoint stream, required checks, check times, and disclosure. Compare each against the independent reference at every check, including expiry, new support, policy changes, registry revocation, future captures, and partitions. Timing measurements must not replace correctness checks.
 

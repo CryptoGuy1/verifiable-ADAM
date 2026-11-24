@@ -69,7 +69,9 @@ impl Cache {
 
     pub fn check(&mut self, b: &Bundle, p: &Policy, r: &Registry, q: &Request) -> CachedReport {
         self.check_with_head_checker(b, p, r, q, &mut |_, expected, actual| HeadCheck {
-            matched: expected.iter().all(|(source, id)| actual.get(source) == Some(id)),
+            matched: expected.iter().fold(true, |matched, (source, id)| {
+                matched & (actual.get(source) == Some(id))
+            }),
             // Evaluate all required heads for consistent accounting, even after a mismatch.
             comparisons: expected.len() as u64,
         })
@@ -78,7 +80,11 @@ impl Cache {
     /// Backend is trusted verifier code and must check the exact supplied snapshot.
     /// Static authentication, bindings, quorum and time checks remain in this crate.
     pub fn check_with_head_checker(
-        &mut self, b: &Bundle, p: &Policy, r: &Registry, q: &Request,
+        &mut self,
+        b: &Bundle,
+        p: &Policy,
+        r: &Registry,
+        q: &Request,
         head_check: &mut impl FnMut(&str, &[(String, String)], &BTreeMap<String, String>) -> HeadCheck,
     ) -> CachedReport {
         let mut work = CacheWork::default();
@@ -194,7 +200,10 @@ impl Certificate {
     }
 
     fn recheck(
-        &self, binding: &str, q: &Request, work: &mut CacheWork,
+        &self,
+        binding: &str,
+        q: &Request,
+        work: &mut CacheWork,
         head_check: &mut impl FnMut(&str, &[(String, String)], &BTreeMap<String, String>) -> HeadCheck,
     ) -> Report {
         let (outcome, reason) = if q.now_ms < self.latest_capture {

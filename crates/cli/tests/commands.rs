@@ -149,6 +149,11 @@ fn replay_writes_reproducible_files_and_preserves_mismatches() {
         veri_adam_protocol::digest(&serde_json::to_vec(&w).unwrap())
     );
     assert_eq!(manifest["timing_measured"], false);
+    assert_eq!(manifest["report_schema_version"], 2);
+    assert_eq!(
+        manifest["strategies"],
+        serde_json::json!(["b1", "b2", "b3"])
+    );
     w.steps[0].expected = veri_adam_protocol::Outcome::Rejected;
     let bad = root.join("wrong-expected.json");
     fs::write(&bad, serde_json::to_vec(&w).unwrap()).unwrap();
@@ -157,4 +162,44 @@ fn replay_writes_reproducible_files_and_preserves_mismatches() {
     let report: serde_json::Value = serde_json::from_slice(&out.stdout).unwrap();
     assert_eq!(report["all_matched"], false);
     assert_eq!(report["summary"]["mismatches"], 1);
+}
+
+#[test]
+fn dependency_demo_saves_all_strategies_and_index_costs() {
+    let root = std::env::temp_dir().join(format!(
+        "veri-adam-dependencies-{}-{}",
+        std::process::id(),
+        SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap()
+            .as_nanos()
+    ));
+    let _guard = Scratch(root.clone());
+    let out = cli(&["dependency-demo", root.to_str().unwrap()]);
+    assert_eq!(
+        out.status.code(),
+        Some(0),
+        "{}",
+        String::from_utf8_lossy(&out.stderr)
+    );
+    let report: serde_json::Value =
+        serde_json::from_slice(&fs::read(root.join("report.json")).unwrap()).unwrap();
+    assert_eq!(report["all_matched"], true);
+    assert_eq!(report["summary"]["checks"], 27);
+    assert!(
+        report["summary"]["b3_dependency_work"]["snapshot_entries_examined"]
+            .as_u64()
+            .unwrap()
+            > 0
+    );
+    assert_eq!(
+        report["summary"]["b2_work"]["signature_checks"],
+        report["summary"]["b3_work"]["signature_checks"]
+    );
+    assert_eq!(
+        cli(&["dependency-demo", root.to_str().unwrap()])
+            .status
+            .code(),
+        Some(2)
+    );
 }

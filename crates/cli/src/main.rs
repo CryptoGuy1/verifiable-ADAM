@@ -56,6 +56,8 @@ fn replay(workload: veri_adam_replay::Workload, output: Option<&str>) -> Result<
                 "hash_encoding": "compact serde_json serialization of the typed workload",
                 "data_kind": workload.data_kind,
                 "run_kind": "software_counter_replay",
+                "report_schema_version": 2,
+                "strategies": ["b1", "b2", "b3"],
                 "timing_measured": false,
                 "energy_measured": false
             }),
@@ -66,7 +68,7 @@ fn replay(workload: veri_adam_replay::Workload, output: Option<&str>) -> Result<
             serde_json::to_string_pretty(&report.summary).map_err(|e| e.to_string())?
         );
         println!(
-            "All outcomes match expected, B1, B2 and reference: {}",
+            "All outcomes match expected, B1, B2, B3 and reference: {}",
             report.all_matched
         );
     } else {
@@ -110,6 +112,9 @@ fn run(args: &[String]) -> Result<bool, String> {
             Ok(true)
         }
         [cmd, dir] if cmd == "replay-demo" => replay(veri_adam_replay::demo::workload(), Some(dir)),
+        [cmd, dir] if cmd == "dependency-demo" => {
+            replay(veri_adam_replay::dependencies_demo::workload(), Some(dir))
+        }
         [cmd, input] if cmd == "replay" => replay(read(input)?, None),
         [cmd, input, dir] if cmd == "replay" => replay(read(input)?, Some(dir)),
         [cmd, bundle, policy, registry, request] if cmd == "verify" => {
@@ -147,7 +152,7 @@ fn run(args: &[String]) -> Result<bool, String> {
 }
 fn help() {
     println!(
-        "veri-adam: experimental signed-event verifier\n\n  demo NEW_DIRECTORY\n  verify BUNDLE POLICY REGISTRY REQUEST\n  replay-demo NEW_DIRECTORY\n  replay WORKLOAD [NEW_DIRECTORY]\n\nPolicy, registry and request are trusted verifier inputs, separate from the bundle.\nReplay workloads contain trusted snapshots and expected outcomes; use trusted files.\nExit: 0 verified/all replay checks match; 1 verification withheld or replay mismatch; 2 input/operational error.\nB2 uses in-memory caches across replay steps. No live sensing, actuation, production keys, B3 or ZKP."
+        "veri-adam: experimental signed-event verifier\n\n  demo NEW_DIRECTORY\n  verify BUNDLE POLICY REGISTRY REQUEST\n  replay-demo NEW_DIRECTORY\n  dependency-demo NEW_DIRECTORY\n  replay WORKLOAD [NEW_DIRECTORY]\n\nPolicy, registry and request are trusted verifier inputs, separate from the bundle.\nReplay workloads contain trusted snapshots and expected outcomes; use trusted files.\nExit: 0 verified/all replay checks match; 1 verification withheld or replay mismatch; 2 input/operational error.\nReplay compares B1, B2, B3 and the independent reference. No live sensing, actuation, production keys or ZKP."
     );
 }
 fn main() -> ExitCode {

@@ -1,6 +1,7 @@
-//! Matched virtual-time replay: B1 and B2 receive the SAME trusted snapshots.
+//! Matched virtual-time replay: B1, B2 and B3 receive identical trusted snapshots.
 use serde::{Deserialize, Serialize};
 use veri_adam_cache::{Cache, CacheWork, CachedReport, Config};
+use veri_adam_dependencies::{DependencyCache, DependencyWork, Report as DependencyReport};
 use veri_adam_protocol::*;
 use veri_adam_verification::{Report, Work};
 
@@ -34,6 +35,7 @@ pub struct StepReport {
     pub reference: Outcome,
     pub b1: Report,
     pub b2: CachedReport,
+    pub b3: DependencyReport,
     pub matched: bool,
 }
 
@@ -45,12 +47,19 @@ pub struct Summary {
     pub b1_work: Work,
     pub b2_work: Work,
     pub b2_cache_work: CacheWork,
+    pub b3_work: Work,
+    pub b3_cache_work: CacheWork,
+    pub b3_dependency_work: DependencyWork,
+    pub b3_peak_indexed_claims: usize,
+    pub b3_peak_dependency_links: usize,
+    pub b3_peak_observed_heads: usize,
     pub peak_signature_entries: usize,
     pub peak_decision_entries: usize,
 }
 
 #[derive(Debug, Serialize)]
 pub struct ReplayReport {
+    pub report_schema_version: u16,
     pub version: u16,
     pub workload_label: String,
     pub data_kind: String,
@@ -68,24 +77,39 @@ pub fn run(workload: &Workload) -> Result<ReplayReport, String> {
         return Err("data_kind must explicitly be synthetic or physical".into());
     }
     let mut cache = Cache::new(workload.cache_config);
+    let mut dependencies = DependencyCache::new(workload.cache_config);
     let mut summary = Summary::default();
     let mut reports = Vec::new();
     for s in &workload.steps {
         if s.reset_cache {
             cache.clear();
+            dependencies.clear();
             summary.cache_resets += 1;
         }
         let b1 = veri_adam_verification::check(&s.bundle, &s.policy, &s.registry, &s.request);
         let b2 = cache.check(&s.bundle, &s.policy, &s.registry, &s.request);
+        let b3 = dependencies.check(&s.bundle, &s.policy, &s.registry, &s.request);
         let reference = veri_adam_reference::check(&s.bundle, &s.policy, &s.registry, &s.request);
-        let matched = [b1.outcome, b2.verification.outcome, reference]
-            .iter()
-            .all(|o| *o == s.expected);
+        let matched = [
+            b1.outcome,
+            b2.verification.outcome,
+            b3.verification.outcome,
+            reference,
+        ]
+        .iter()
+        .all(|o| *o == s.expected);
         summary.checks += 1;
         summary.mismatches += u64::from(!matched);
         add_work(&mut summary.b1_work, &b1.work);
         add_work(&mut summary.b2_work, &b2.verification.work);
         add_cache_work(&mut summary.b2_cache_work, &b2.cache_work);
+        add_work(&mut summary.b3_work, &b3.verification.work);
+        add_cache_work(&mut summary.b3_cache_work, &b3.cache_work);
+        add_dependency_work(&mut summary.b3_dependency_work, &b3.dependency_work);
+        summary.b3_peak_indexed_claims = summary.b3_peak_indexed_claims.max(b3.indexed_claims);
+        summary.b3_peak_dependency_links =
+            summary.b3_peak_dependency_links.max(b3.dependency_links);
+        summary.b3_peak_observed_heads = summary.b3_peak_observed_heads.max(b3.observed_heads);
         summary.peak_signature_entries = summary.peak_signature_entries.max(b2.signature_entries);
         summary.peak_decision_entries = summary.peak_decision_entries.max(b2.decision_entries);
         reports.push(StepReport {
@@ -95,10 +119,12 @@ pub fn run(workload: &Workload) -> Result<ReplayReport, String> {
             reference,
             b1,
             b2,
+            b3,
             matched,
         });
     }
     Ok(ReplayReport {
+        report_schema_version: 2,
         version: VERSION,
         workload_label: workload.label.clone(),
         data_kind: workload.data_kind.clone(),
@@ -107,6 +133,23 @@ pub fn run(workload: &Workload) -> Result<ReplayReport, String> {
         summary,
         steps: reports,
     })
+}
+
+fn add_dependency_work(t: &mut DependencyWork, n: &DependencyWork) {
+    t.snapshot_entries_examined += n.snapshot_entries_examined;
+    t.snapshot_changes += n.snapshot_changes;
+    t.dependency_links_visited += n.dependency_links_visited;
+    t.mismatch_changes += n.mismatch_changes;
+    t.metadata_lookups += n.metadata_lookups;
+    t.metadata_hits += n.metadata_hits;
+    t.metadata_entries_inserted += n.metadata_entries_inserted;
+    t.dependency_links_inserted += n.dependency_links_inserted;
+    t.cleanup_entries_examined += n.cleanup_entries_examined;
+    t.metadata_entries_removed += n.metadata_entries_removed;
+    t.dependency_links_removed += n.dependency_links_removed;
+    t.reset_claims_cleared += n.reset_claims_cleared;
+    t.reset_links_cleared += n.reset_links_cleared;
+    t.reset_heads_cleared += n.reset_heads_cleared;
 }
 
 fn add_work(total: &mut Work, n: &Work) {
@@ -130,3 +173,4 @@ fn add_cache_work(t: &mut CacheWork, n: &CacheWork) {
 }
 
 pub mod demo;
+pub mod dependencies_demo;

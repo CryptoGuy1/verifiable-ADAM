@@ -10,6 +10,8 @@ The project now has a Rust workspace with `protocol`, `verification`, `reference
 
 The second software milestone adds `cache` and `replay`: bounded B2 signature/decision caches, fresh time/checkpoint checks, a 31-step frozen synthetic workload, saved reports/manifests, and maintenance counters. The [B2 contract](specs/b2-cache.md) defines what is reused and what B3 must preserve. Final research baseline freezing, physical deployment, and confirmatory evaluation remain open.
 
+The third milestone adds `dependencies`: a B3 reverse source/claim index using the same B2 cache and trusted snapshots. Both frozen workloads now compare B1/B2/B3/reference outcomes. The [B3 contract](specs/b3-dependencies.md) records the index mechanics, full-snapshot overhead, and neutral signature-count findings; no efficiency advantage or novelty is claimed. Alternative support and incremental fusion remain open.
+
 ## Language and implementation direction
 
 Use **Rust for the protocol, verification, cache, dependency manager, replay engine, and command-line services**, and **Python for sensor acquisition, experiment orchestration, and analysis**.

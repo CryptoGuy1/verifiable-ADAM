@@ -50,6 +50,8 @@ These counters are different operations and must not be added into an unweighted
 
 The replay runner reads ordered steps containing a bundle, trusted policy/registry/request snapshot, expected outcome, and optional cache reset. B1 and B2 receive identical snapshots; the independent reference checker separately computes an outcome. All three must match the declared expected result. Mismatches remain in the report and cause CLI exit code 1 rather than silently replacing the expectation.
 
+The later B3 milestone extends report schema to version 2 and checks B3 against these same snapshots and expectations; the B2 workload and baseline behavior remain unchanged. See [the B3 contract](b3-dependencies.md).
+
 `workloads/b2-currentness-v1.json` freezes 31 labeled synthetic checks: cold and stable checks, unrelated updates, exact expiry, historical verification, a pre-capture check, missing/replaced heads, signed replacement, expiry of remaining support, renewal, tampering, unknown sources, changed policy contents, role revocation, changed keys, event/nonce replay, missing/duplicate ballots, explicit degraded mode, and restart.
 
 ```sh
