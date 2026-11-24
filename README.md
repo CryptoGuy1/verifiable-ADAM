@@ -2,7 +2,30 @@
 
 Verifiable ADAM investigates whether dependency-aware verification can reduce repeated work compared with a competent expiry-aware cache while preserving the same acceptance rules. Our physical testbed is one Pi 5 and one Pi 4, using CO₂ and light observations.
 
+The present equal-weight rule and simulation are **ADAM-inspired**, not a reproduction of original ADAM's weighted fusion, role-specific ballots, reasoner, and governance. Equivalence with a strong ordinary indexed cache is the working hypothesis for the current B3 index. See [the review decisions](specs/review-decisions.md) for the comparison, privacy-format, and data-collection gates.
+
 The software now includes signed synthetic observations, coordinator-signed decisions, individually signed ballots, a deterministic B1 public verifier, a B2 expiry-aware cache, a B3 reverse dependency index, and a separately implemented reference evaluator. A matched replay runner checks B1, B2, and B3 against declared expected outcomes and the reference. These establish a protocol and development corpus, not research novelty, physical accuracy, or hardware performance.
+
+## Run the simulation
+
+To view the saved example, run this from the project folder and leave the terminal running:
+
+```sh
+python3 scripts/run_simulation_viewer.py
+```
+
+Open **http://127.0.0.1:8765/** in your browser, then click **Play**. This serves just the simulation page on your own computer. No packages need installing. If the page says JavaScript has not started, check that your browser allows JavaScript for this local page. An initialization failure now displays an error instead of an active-looking Play button. Use `--port 8766` if the port is occupied.
+
+To generate a different run:
+
+```sh
+cargo run --locked -- simulate runs/sim-mixed mixed 42
+python3 scripts/run_simulation_viewer.py runs/sim-mixed/simulation.html
+```
+
+The run creates `simulation.html` with playback controls, CO₂/light plots, node/link states, strategy outcomes, and an event timeline. It also saves the configuration, observations, workload, reports, and manifest. The simulation uses virtual time, toy environmental data, and public fixture keys; no sensors or Pis need to be connected.
+
+Scenarios are `stable`, `dropout`, `partition`, `delay`, `tamper`, `replay`, `false-reading`, and `mixed`. Use a new directory each time. For example, `simulate runs/sim-stable stable 42` produces a normal run, while `simulate runs/sim-false false-reading 42` demonstrates that signed false readings can pass protocol verification. `simulate-config CONFIG NEW_DIRECTORY` accepts the saved typed configuration. See [the simulation contract](specs/simulation-v1.md) and [what remains to build](docs/project-status.md).
 
 ## Run the signed event demonstration
 
@@ -64,6 +87,7 @@ On this synthetic workload B2 and B3 perform the same 23 signature checks. B3 sa
 | `crates/cache` | B2 bounded signature/decision caches, fresh time/head checks, maintenance counters |
 | `crates/dependencies` | B3 reverse source/claim index, snapshot reconciliation, bounded metadata cleanup |
 | `crates/replay` | Matched B1/B2/B3/reference checks over trusted ordered snapshots |
+| `crates/simulation` | Deterministic environmental signals, claim-delivery faults, independent scenario expectations, offline playback |
 | `crates/cli` | New demo runs, bounded JSON input, machine-readable verification reports |
 | `specs/protocol-v1.md` | Implemented provisional semantics and exact binary encodings |
 | `specs/next-milestones.md` | Remaining work and baseline fairness constraints |
@@ -91,6 +115,6 @@ The provisional public rule is an equally weighted mean CO₂ threshold, calcula
 
 Nominal mode requires two matching ballots from three registered logical voters. Explicit degraded mode requires both of two voters. The demo maps three logical voters onto two node labels; it does not demonstrate three physically independent voters or Byzantine fault tolerance.
 
-Alternative support, incremental fusion, production key provisioning, persistent anti-replay state, live sensor acquisition, network services, audit-log durability, action release, and B4 private proofs are not implemented. B2 and B3 are currently in-memory libraries used by replay; separate `verify` invocations remain cold B1 checks. Currentness is checked against the caller's trusted snapshot; there is no atomic live check-and-release mechanism yet. A signed false reading can still pass authentication.
+Alternative support, incremental fusion, B0 original-style reproduction, production key provisioning, persistent anti-replay state, live sensor acquisition, network services, audit-log durability, action release, and B4 private proofs are not implemented. B2 and B3 are currently in-memory libraries used by replay and simulation; separate `verify` invocations remain cold B1 checks. Currentness is checked against the caller's trusted snapshot; there is no atomic live check-and-release mechanism yet. A signed false reading can still pass authentication. The simulator transports pre-signed claim packets, not distributed planner/ballot negotiation.
 
 See [BUILD_PLAN.md](BUILD_PLAN.md) for the larger checklist and [the next milestones](specs/next-milestones.md) for the implementation sequence.

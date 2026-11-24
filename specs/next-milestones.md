@@ -4,6 +4,10 @@
 
 The workspace implements B1 public verification, B2 ordinary caching, the B3 reverse dependency index prototype, independent reference outcomes, a matched replay runner, exact signature encoding, and adversarial tests. The frozen 31-check baseline and 27-check multi-claim workload are documented in [the B2 contract](b2-cache.md) and [the B3 contract](b3-dependencies.md). It is ready for review and further implementation, not for claims of a completed two-Pi experiment. Procurement, power/cooling validation, sensor calibration, and Pi deployment remain open.
 
+The [virtual-time simulation](simulation-v1.md) now generates changing CO₂/light observations, signed claim traffic, transport/source faults, independent expected outcomes, and offline browser playback. It is a toy environment and complete-claim transport model, not a calibrated physical room or distributed consensus model. Remaining work and parallel workstreams are consolidated in [project status](../docs/project-status.md).
+
+Following the research review, Pi preparation and signing/verification/full-check timing should proceed in parallel with semantics and contribution decisions. Treat strong indexed-cache equivalence as the working hypothesis, label current behavior ADAM-inspired, decide the private-capable record format before confirmatory acquisition, and predeclare adverse workloads before further optimization. See [review decisions](review-decisions.md).
+
 ## Ordinary caching before dependency optimization
 
 B2 now retains positive signature results and content-bound decision-processing certificates with required support horizons/checkpoints. Time and required heads are rechecked on every decision hit. Full policy/registry contents are bound even without a version bump. It preserves reuse on unrelated updates and harmless transport reordering. Keep these conventional capabilities in place when comparing B3.

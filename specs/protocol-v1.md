@@ -2,6 +2,8 @@
 
 This document specifies the implemented first software milestone. It is an experimental starting contract, not the final preregistered protocol. The independent reference and production checker must agree on the frozen corpus before later strategies are compared.
 
+Version 1 is a public-reading development format. It is not frozen as the final B4 disclosure format. If B4 is required, specify a separate private-capable version before confirmatory collection; do not add a placeholder commitment and assume that publicly exposed reading hashes are hidden. Retain the version 1 encoder/verifier and original bytes for audit. A later version does not automatically invalidate old public records, but cannot make already disclosed readings private. See [the review decisions](review-decisions.md).
+
 ## Trusted inputs and record identities
 
 The claimant provides a bundle containing a signed decision, signed measurements, and signed ballots. The verifier separately receives a policy, a registry, and a request. The claimant must not control those trusted inputs.

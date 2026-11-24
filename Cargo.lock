@@ -345,6 +345,7 @@ dependencies = [
  "veri-adam-protocol",
  "veri-adam-reference",
  "veri-adam-replay",
+ "veri-adam-simulation",
  "veri-adam-verification",
 ]
 
@@ -388,6 +389,17 @@ dependencies = [
  "veri-adam-protocol",
  "veri-adam-reference",
  "veri-adam-verification",
+]
+
+[[package]]
+name = "veri-adam-simulation"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "serde_json",
+ "veri-adam-cache",
+ "veri-adam-protocol",
+ "veri-adam-replay",
 ]
 
 [[package]]

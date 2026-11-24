@@ -203,3 +203,87 @@ fn dependency_demo_saves_all_strategies_and_index_costs() {
         Some(2)
     );
 }
+
+#[test]
+fn simulation_saves_a_viewer_and_reproduces_from_config() {
+    let root = std::env::temp_dir().join(format!(
+        "veri-adam-sim-{}-{}",
+        std::process::id(),
+        SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap()
+            .as_nanos()
+    ));
+    fs::create_dir(&root).unwrap();
+    let _guard = Scratch(root.clone());
+    let first = root.join("first");
+    let out = cli(&["simulate", first.to_str().unwrap(), "mixed", "42"]);
+    assert_eq!(
+        out.status.code(),
+        Some(0),
+        "{}",
+        String::from_utf8_lossy(&out.stderr)
+    );
+    for file in [
+        "config.json",
+        "simulation.json",
+        "simulation.html",
+        "workload.json",
+        "report.json",
+        "manifest.json",
+    ] {
+        assert!(first.join(file).is_file());
+    }
+    let manifest: serde_json::Value =
+        serde_json::from_slice(&fs::read(first.join("manifest.json")).unwrap()).unwrap();
+    assert_eq!(manifest["data_kind"], "synthetic");
+    assert_eq!(manifest["host_timing_measured"], false);
+    assert_eq!(manifest["public_test_keys"], true);
+    let second = root.join("second");
+    assert!(
+        cli(&[
+            "simulate-config",
+            first.join("config.json").to_str().unwrap(),
+            second.to_str().unwrap()
+        ])
+        .status
+        .success()
+    );
+    assert_eq!(
+        fs::read(first.join("simulation.json")).unwrap(),
+        fs::read(second.join("simulation.json")).unwrap()
+    );
+    assert_eq!(
+        cli(&["simulate", first.to_str().unwrap()]).status.code(),
+        Some(2)
+    );
+    let out = cli(&["replay", first.join("workload.json").to_str().unwrap()]);
+    assert!(out.status.success());
+    let report: serde_json::Value = serde_json::from_slice(&out.stdout).unwrap();
+    assert_eq!(report["all_matched"], true);
+}
+
+#[test]
+fn invalid_simulation_arguments_fail_before_creating_a_run() {
+    let root = std::env::temp_dir().join(format!(
+        "veri-adam-bad-sim-{}-{}",
+        std::process::id(),
+        SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap()
+            .as_nanos()
+    ));
+    assert_eq!(
+        cli(&["simulate", root.to_str().unwrap(), "unknown"])
+            .status
+            .code(),
+        Some(2)
+    );
+    assert_eq!(
+        cli(&["simulate", root.to_str().unwrap(), "mixed", "not-a-seed"])
+            .status
+            .code(),
+        Some(2)
+    );
+    assert!(!root.exists());
+}

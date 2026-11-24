@@ -1,5 +1,5 @@
 [workspace]
-members = ["crates/protocol", "crates/verification", "crates/reference", "crates/cache", "crates/dependencies", "crates/replay", "crates/cli"]
+members = ["crates/protocol", "crates/verification", "crates/reference", "crates/cache", "crates/dependencies", "crates/replay", "crates/simulation", "crates/cli"]
 resolver = "3"
 
 [workspace.package]
@@ -14,6 +14,7 @@ veri-adam-reference = { path = "crates/reference" }
 veri-adam-cache = { path = "crates/cache" }
 veri-adam-dependencies = { path = "crates/dependencies" }
 veri-adam-replay = { path = "crates/replay" }
+veri-adam-simulation = { path = "crates/simulation" }
 ed25519-dalek = "=3.0.0"
 serde = { version = "=1.0.229", features = ["derive"] }
 serde_json = "=1.0.154"

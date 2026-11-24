@@ -12,6 +12,10 @@ The second software milestone adds `cache` and `replay`: bounded B2 signature/de
 
 The third milestone adds `dependencies`: a B3 reverse source/claim index using the same B2 cache and trusted snapshots. Both frozen workloads now compare B1/B2/B3/reference outcomes. The [B3 contract](specs/b3-dependencies.md) records the index mechanics, full-snapshot overhead, and neutral signature-count findings; no efficiency advantage or novelty is claimed. Alternative support and incremental fusion remain open.
 
+The simulation milestone adds `simulation`: deterministic environmental signals, discrete virtual-time claim delivery, source/network faults, tampering/replay, independent scenario expectations, and a self-contained playback file. See [simulation version 1](specs/simulation-v1.md) and [the remaining project work](docs/project-status.md). This is not physical sensor validation, distributed consensus timing, or measured hardware performance.
+
+The research review is reconciled in [review decisions](specs/review-decisions.md): current semantics are ADAM-inspired; strong indexed-cache equivalence is the working hypothesis; privacy format is a pre-collection decision; and Pi preparation/microbenchmarks proceed alongside design work.
+
 ## Language and implementation direction
 
 Use **Rust for the protocol, verification, cache, dependency manager, replay engine, and command-line services**, and **Python for sensor acquisition, experiment orchestration, and analysis**.
@@ -37,6 +41,8 @@ Keep the first implementation small: a Cargo workspace, local files and command-
 - [ ] Define comparable work counters, including invalidation, indexing, and cache-maintenance costs. Measure total resource costs as well as avoided checks.
 - [ ] Include workloads where B3 may offer no benefit or cost more, alongside stable, unrelated-update, bursty, and shared-support workloads.
 - [ ] Decide the research response if B2 and B3 are equivalent or B3 provides no practical improvement. Report the result without weakening B2.
+- [ ] State a contribution beyond ordinary indexed caching, or explicitly report equivalence; do not treat the current reverse index as novelty by itself.
+- [ ] Predeclare new neutral/adverse workload families before additional tuning; existing exposed corpora are development evidence only.
 
 ## Event format and cryptographic bindings
 
@@ -60,6 +66,7 @@ Keep the first implementation small: a Cargo workspace, local files and command-
 - [ ] Reproduce the specified nominal three-voter majority and permitted two-voter degraded mode; never silently reduce quorum.
 - [ ] Separate live bilateral tests from logical-role replay. Two devices do not demonstrate three independently controlled voters or Byzantine fault tolerance.
 - [ ] Define any reasoner output's role. A signed output hash authenticates a reference; it does not prove inference correctness.
+- [ ] Reproduce the paper-specified aggregation, independent role ballots, majority resolution, and governance for B0 before claiming ADAM compatibility; obtain original code/traces or document reconstruction limits.
 
 ## Currentness and dependency semantics
 
@@ -76,6 +83,7 @@ Keep the first implementation small: a Cargo workspace, local files and command-
 ## Optional private threshold proof
 
 - [ ] Identify the external verifier and the operational reason it must not receive the exact reading.
+- [ ] Decide the private-capable format before confirmatory collection; preserve public version 1 records without implying they can become private retroactively.
 - [ ] Specify the public statement, private witness, bounded integer range, threshold, and event context.
 - [ ] Select a hiding commitment with an explicit randomness policy; do not assume a digest of a low-range reading hides its value.
 - [ ] Ensure the proof concerns the same committed value authenticated by the sensor record.

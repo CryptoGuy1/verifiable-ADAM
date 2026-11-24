@@ -79,8 +79,68 @@ fn replay(workload: veri_adam_replay::Workload, output: Option<&str>) -> Result<
     }
     Ok(report.all_matched)
 }
+
+fn simulate(config: veri_adam_simulation::Config, output: &str) -> Result<bool, String> {
+    let simulation = veri_adam_simulation::run(config)?;
+    let html = veri_adam_simulation::viewer::html(&simulation)?;
+    let dir = new_directory(output)?;
+    write(dir, "config.json", &simulation.config)?;
+    write(dir, "workload.json", &simulation.workload)?;
+    write(dir, "report.json", &simulation.verification)?;
+    write(dir, "simulation.json", &simulation)?;
+    let mut file = OpenOptions::new()
+        .write(true)
+        .create_new(true)
+        .open(dir.join("simulation.html"))
+        .map_err(|e| e.to_string())?;
+    file.write_all(html.as_bytes()).map_err(|e| e.to_string())?;
+    write(
+        dir,
+        "manifest.json",
+        &serde_json::json!({
+            "software_version":env!("CARGO_PKG_VERSION"),"simulation_schema_version":1,"report_schema_version":2,
+            "run_kind":"virtual_time_simulation","data_kind":"synthetic","public_test_keys":true,
+            "strategies":["b1","b2","b3"],"host_timing_measured":false,"energy_measured":false,
+            "model":"prescribed_co2_and_light_v1","workload_sha256":digest(&serde_json::to_vec(&simulation.workload).map_err(|e|e.to_string())?),
+            "config_sha256":digest(&serde_json::to_vec(&simulation.config).map_err(|e|e.to_string())?),
+            "hash_encoding":"compact serde_json serialization of typed input"
+        }),
+    )?;
+    println!(
+        "Simulation viewer: {}",
+        dir.join("simulation.html").display()
+    );
+    println!(
+        "{}",
+        serde_json::to_string_pretty(&simulation.summary).map_err(|e| e.to_string())?
+    );
+    println!(
+        "Verification checks: {}; all expected/B1/B2/B3/reference outcomes agree: {}",
+        simulation.verification.summary.checks, simulation.verification.all_matched
+    );
+    Ok(simulation.verification.all_matched)
+}
 fn run(args: &[String]) -> Result<bool, String> {
     match args {
+        [cmd, dir] if cmd == "simulate" => simulate(veri_adam_simulation::Config::default(), dir),
+        [cmd, dir, scenario] if cmd == "simulate" => simulate(
+            veri_adam_simulation::Config {
+                scenario: veri_adam_simulation::Scenario::parse(scenario)?,
+                ..Default::default()
+            },
+            dir,
+        ),
+        [cmd, dir, scenario, seed] if cmd == "simulate" => simulate(
+            veri_adam_simulation::Config {
+                scenario: veri_adam_simulation::Scenario::parse(scenario)?,
+                seed: seed
+                    .parse()
+                    .map_err(|_| "seed must be an unsigned 64-bit integer")?,
+                ..Default::default()
+            },
+            dir,
+        ),
+        [cmd, input, dir] if cmd == "simulate-config" => simulate(read(input)?, dir),
         [cmd, dir] if cmd == "demo" => {
             let dir = new_directory(dir)?;
             let (policy, registry, request, bundle) =
@@ -152,7 +212,7 @@ fn run(args: &[String]) -> Result<bool, String> {
 }
 fn help() {
     println!(
-        "veri-adam: experimental signed-event verifier\n\n  demo NEW_DIRECTORY\n  verify BUNDLE POLICY REGISTRY REQUEST\n  replay-demo NEW_DIRECTORY\n  dependency-demo NEW_DIRECTORY\n  replay WORKLOAD [NEW_DIRECTORY]\n\nPolicy, registry and request are trusted verifier inputs, separate from the bundle.\nReplay workloads contain trusted snapshots and expected outcomes; use trusted files.\nExit: 0 verified/all replay checks match; 1 verification withheld or replay mismatch; 2 input/operational error.\nReplay compares B1, B2, B3 and the independent reference. No live sensing, actuation, production keys or ZKP."
+        "veri-adam: experimental signed-event verifier\n\n  demo NEW_DIRECTORY\n  verify BUNDLE POLICY REGISTRY REQUEST\n  replay-demo NEW_DIRECTORY\n  dependency-demo NEW_DIRECTORY\n  replay WORKLOAD [NEW_DIRECTORY]\n  simulate NEW_DIRECTORY [SCENARIO [SEED]]\n  simulate-config CONFIG NEW_DIRECTORY\n\nScenarios: stable, dropout, partition, delay, tamper, replay, false-reading, mixed.\nPolicy, registry and request are trusted verifier inputs, separate from the bundle.\nReplay workloads contain trusted snapshots and expected outcomes; use trusted files.\nExit: 0 verified/all checks match; 1 verification withheld or mismatch; 2 input/operational error.\nSimulation uses virtual time, toy environmental data and public test keys. No live sensors, actuation, production keys or ZKP."
     );
 }
 fn main() -> ExitCode {

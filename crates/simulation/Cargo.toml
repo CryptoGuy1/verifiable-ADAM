@@ -1,0 +1,12 @@
+[package]
+name = "veri-adam-simulation"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+veri-adam-protocol.workspace = true
+veri-adam-cache.workspace = true
+veri-adam-replay.workspace = true
+serde.workspace = true
+serde_json.workspace = true

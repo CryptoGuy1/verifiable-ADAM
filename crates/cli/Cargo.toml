@@ -13,5 +13,6 @@ veri-adam-protocol.workspace = true
 veri-adam-verification.workspace = true
 veri-adam-reference.workspace = true
 veri-adam-replay.workspace = true
+veri-adam-simulation.workspace = true
 serde.workspace = true
 serde_json.workspace = true
