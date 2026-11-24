@@ -53,7 +53,7 @@ fn agent_simulation_exports_real_ballots_and_preserves_existing_runs() {
     assert!(
         fs::read_to_string(root.join("simulation.html"))
             .unwrap()
-            .contains("Agent message timeline")
+            .contains("What did the agents decide?")
     );
     // An existing directory must fail before model preparation or any overwrite.
     assert_eq!(

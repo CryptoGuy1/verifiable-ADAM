@@ -37,6 +37,8 @@ python3 scripts/run_simulation_viewer.py runs/agents-local/simulation.html --por
 
 Open `http://127.0.0.1:8767/`. For a model-free test, replace `ollama` with `rules` and choose a new output directory. No automatic downloads, remote model calls, client messages or Pi changes occur.
 
+The demo opens on the first completed example and presents readings, individual agent votes and the final result in three steps. **Choose an example** shows its result; **Watch example** replays that example and pauses before the next one; **Next example** advances to the next result. The last example includes expiry. Checker codes, original explanations, message history, speed and seeking are under the initially collapsed **How was this checked?** section. Icons accompany text labels. Refreshing this derived HTML does not rerun Qwen or change signed records.
+
 Each run exports `agent-run.json`, self-contained `simulation.html` and `manifest.json`. Recorded playback does not make new model calls. Model requests/responses and signed assessments are inspectable in the JSON. A new generation makes new model calls; a fixed temperature/seed does not promise reproducible LLM results. The run manifest hashes the compact typed run, including timing and inference artifacts. Existing directories are not overwritten.
 
 **ZKP is not implemented in this milestone.** All CO2 values in these artifacts are public. Private commitments and a bounded authenticated proof path require a separately versioned format and proof implementation.
