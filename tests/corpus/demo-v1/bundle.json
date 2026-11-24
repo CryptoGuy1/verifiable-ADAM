@@ -1,0 +1,89 @@
+{
+  "decision": {
+    "payload": {
+      "protocol_version": 1,
+      "event_id": "synthetic-event-001",
+      "nonce": "abababababababababababababababababababababababababababababababab",
+      "policy_hash": "78213cd64977b64472f74bfad05718e05a377db12cb5435fe7d4cd5139a78682",
+      "registry_version": 1,
+      "coordinator_id": "coordinator",
+      "measurement_ids": [
+        "3c68d518fb9031046077058db8a8c6ab6d948c51ca333ff611ef463e7d6e962d",
+        "537b98af2e3a3ac48aeebf981bb54161a3aa2f8d96907d0498f3da73b203fd61"
+      ],
+      "advisory": true
+    },
+    "signature": "d0621c78fdbbea0cdd7c955adf23e6b6656ccb424732ba716df89a87549ef05f5c3747d70643285c25515bbd88c9ca76e0bbe99579c14073ae77693d6428c40d"
+  },
+  "measurements": [
+    {
+      "payload": {
+        "protocol_version": 1,
+        "event_id": "synthetic-event-001",
+        "nonce": "abababababababababababababababababababababababababababababababab",
+        "signer_id": "sensor-a",
+        "sequence": 1,
+        "captured_at_ms": 1000,
+        "co2_ppm": 900,
+        "temperature_millic": 24000,
+        "humidity_millipercent": 50000,
+        "light_millilux": 120000,
+        "calibration_version": 1,
+        "policy_hash": "78213cd64977b64472f74bfad05718e05a377db12cb5435fe7d4cd5139a78682"
+      },
+      "signature": "c2c2619b8bcf97e1e7f39cf8cda0008a9be91755bafcf5cea5a1c3f28eb810440b469613e73f9f6c90df949f6749d16231be6f92284b84c19e3dfaadfcf85207"
+    },
+    {
+      "payload": {
+        "protocol_version": 1,
+        "event_id": "synthetic-event-001",
+        "nonce": "abababababababababababababababababababababababababababababababab",
+        "signer_id": "sensor-b",
+        "sequence": 1,
+        "captured_at_ms": 1000,
+        "co2_ppm": 850,
+        "temperature_millic": 24000,
+        "humidity_millipercent": 50000,
+        "light_millilux": 120000,
+        "calibration_version": 1,
+        "policy_hash": "78213cd64977b64472f74bfad05718e05a377db12cb5435fe7d4cd5139a78682"
+      },
+      "signature": "5200333e1707ba26fb22b770bb339283bc4d75f9fde35185a234edfe531de8a7f737bb01ee8c1b881dd189f52ffb7cf1511399e2c7f7838f77270562f05c300b"
+    }
+  ],
+  "ballots": [
+    {
+      "payload": {
+        "protocol_version": 1,
+        "event_id": "synthetic-event-001",
+        "nonce": "abababababababababababababababababababababababababababababababab",
+        "decision_hash": "7608998e23a8ff968b7ca5a7888edb56d64c6abaa489d45ea79594c78040a696",
+        "voter_id": "voter-a",
+        "advisory": true
+      },
+      "signature": "ca9601f0d3ca724a8dabb93d190f6052a77b814e9c48d68da3ee906574e5decbfa31714148a734afe523808de4bccce00e74047f6f7d74c66b654fa0d5812e07"
+    },
+    {
+      "payload": {
+        "protocol_version": 1,
+        "event_id": "synthetic-event-001",
+        "nonce": "abababababababababababababababababababababababababababababababab",
+        "decision_hash": "7608998e23a8ff968b7ca5a7888edb56d64c6abaa489d45ea79594c78040a696",
+        "voter_id": "voter-b",
+        "advisory": true
+      },
+      "signature": "87b8940e1fd931711d7e6648bf8356237e93e4df1e52ef0795802a8037ff16c53a1297260c27633e8d9ed70ba6203a2545baa24f804db24880418843a054df00"
+    },
+    {
+      "payload": {
+        "protocol_version": 1,
+        "event_id": "synthetic-event-001",
+        "nonce": "abababababababababababababababababababababababababababababababab",
+        "decision_hash": "7608998e23a8ff968b7ca5a7888edb56d64c6abaa489d45ea79594c78040a696",
+        "voter_id": "voter-c",
+        "advisory": true
+      },
+      "signature": "53c2eef07230396319df106ee6c36a1e2545633b9a3411934b563b041d7cbe009622db692e3c66e1e7dff3862a87c42b8b52a4203f35bc9910d163caab31cf0c"
+    }
+  ]
+}

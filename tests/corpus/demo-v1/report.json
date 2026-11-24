@@ -1,0 +1,11 @@
+{
+  "outcome": "verified_current",
+  "reason": "current_support_verified",
+  "decision_id": "7608998e23a8ff968b7ca5a7888edb56d64c6abaa489d45ea79594c78040a696",
+  "support_expires_at_ms": 11000,
+  "work": {
+    "signature_checks": 6,
+    "measurements_evaluated": 2,
+    "ballots_evaluated": 3
+  }
+}

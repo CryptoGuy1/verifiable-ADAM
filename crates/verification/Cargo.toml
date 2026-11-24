@@ -1,0 +1,14 @@
+[package]
+name = "veri-adam-verification"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+veri-adam-protocol.workspace = true
+serde.workspace = true
+
+[dev-dependencies]
+veri-adam-reference.workspace = true
+serde_json.workspace = true
+

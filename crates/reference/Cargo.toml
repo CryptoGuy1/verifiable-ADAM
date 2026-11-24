@@ -1,0 +1,9 @@
+[package]
+name = "veri-adam-reference"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+veri-adam-protocol.workspace = true
+

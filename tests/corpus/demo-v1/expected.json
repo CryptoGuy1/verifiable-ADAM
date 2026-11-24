@@ -1,0 +1,6 @@
+[
+  {"bundle":"bundle.json","request":"request.json","outcome":"verified_current","exit_code":0},
+  {"bundle":"bundle-tampered.json","request":"request.json","outcome":"rejected","exit_code":1},
+  {"bundle":"bundle.json","request":"request-expired.json","outcome":"expired","exit_code":1},
+  {"bundle":"bundle.json","request":"request-historical.json","outcome":"verified_historical","exit_code":0}
+]

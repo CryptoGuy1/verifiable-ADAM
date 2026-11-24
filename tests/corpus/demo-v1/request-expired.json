@@ -1,0 +1,10 @@
+{
+  "event_id": "synthetic-event-001",
+  "nonce": "abababababababababababababababababababababababababababababababab",
+  "now_ms": 11000,
+  "kind": "current",
+  "heads": {
+    "sensor-a": "537b98af2e3a3ac48aeebf981bb54161a3aa2f8d96907d0498f3da73b203fd61",
+    "sensor-b": "3c68d518fb9031046077058db8a8c6ab6d948c51ca333ff611ef463e7d6e962d"
+  }
+}

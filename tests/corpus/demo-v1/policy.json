@@ -1,0 +1,17 @@
+{
+  "protocol_version": 1,
+  "policy_version": 1,
+  "threshold_ppm": 800,
+  "ttl_ms": 10000,
+  "sources": [
+    "sensor-a",
+    "sensor-b"
+  ],
+  "voters": [
+    "voter-a",
+    "voter-b",
+    "voter-c"
+  ],
+  "coordinator": "coordinator",
+  "crew_mode": "nominal_three"
+}

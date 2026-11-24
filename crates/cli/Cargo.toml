@@ -1,0 +1,16 @@
+[package]
+name = "veri-adam-cli"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+
+[[bin]]
+name = "veri-adam"
+path = "src/main.rs"
+
+[dependencies]
+veri-adam-protocol.workspace = true
+veri-adam-verification.workspace = true
+veri-adam-reference.workspace = true
+serde.workspace = true
+serde_json.workspace = true
