@@ -122,6 +122,66 @@ fn simulate(config: veri_adam_simulation::Config, output: &str) -> Result<bool, 
 }
 fn run(args: &[String]) -> Result<bool, String> {
     match args {
+        [cmd, output, mode] if cmd == "agent-simulate" => {
+            let mut reasoner: Box<dyn veri_adam_agents::Reasoner> = match mode.as_str() {
+                "rules" => Box::new(veri_adam_agents::RuleReasoner),
+                "ollama" => Box::new(veri_adam_agents::OllamaReasoner {
+                    model: "qwen3:1.7b".into(),
+                    adapter: Path::new(env!("CARGO_MANIFEST_DIR"))
+                        .join("../../scripts/ollama_agent.py"),
+                }),
+                _ => return Err("agent mode must be rules or ollama".into()),
+            };
+            let dir = new_directory(output)?;
+            println!(
+                "Preparing {mode} before evidence capture (cold Ollama loading may take up to two minutes)."
+            );
+            let preparation = reasoner.prepare()?;
+            if let Some(preparation) = &preparation {
+                write(dir, "model-preparation.json", preparation)?;
+            }
+            println!(
+                "Running message-driven agents ({mode}); local model inference can take up to 20 s per round."
+            );
+            let run = veri_adam_agents::showcase(reasoner, mode.clone())?;
+            write(dir, "agent-run.json", &run)?;
+            let html = veri_adam_agents::html(&run)?;
+            OpenOptions::new()
+                .write(true)
+                .create_new(true)
+                .open(dir.join("simulation.html"))
+                .map_err(|e| e.to_string())?
+                .write_all(html.as_bytes())
+                .map_err(|e| e.to_string())?;
+            write(
+                dir,
+                "manifest.json",
+                &serde_json::json!({
+                    "software_version":env!("CARGO_PKG_VERSION"),"run_kind":"local_message_driven_agents",
+                    "data_kind":run.data_kind,"public_test_keys":true,"zkp_implemented":false,
+                    "mode":mode,"agent_run_sha256":digest(&serde_json::to_vec(&run).map_err(|e|e.to_string())?),
+                    "model_preparation":preparation,
+                    "hash_encoding":"compact serde_json serialization of typed agent run",
+                    "wall_time_affects_currentness":true,"pi_benchmark":false
+                }),
+            )?;
+            for round in &run.rounds {
+                println!(
+                    "{}: {} ({} signed assessments, {} reasoner responses) — {}",
+                    round.name,
+                    round.state,
+                    round.assessments.len(),
+                    round.inferences.len(),
+                    round.reason
+                );
+                for absent in &round.absent {
+                    println!("  {absent}");
+                }
+            }
+            println!("Viewer: {}", dir.join("simulation.html").display());
+            Ok(run.all_reference_outcomes_match
+                && (mode != "ollama" || run.rounds.iter().any(|r| !r.inferences.is_empty())))
+        }
         [cmd, dir] if cmd == "simulate" => simulate(veri_adam_simulation::Config::default(), dir),
         [cmd, dir, scenario] if cmd == "simulate" => simulate(
             veri_adam_simulation::Config {
@@ -212,7 +272,7 @@ fn run(args: &[String]) -> Result<bool, String> {
 }
 fn help() {
     println!(
-        "veri-adam: experimental signed-event verifier\n\n  demo NEW_DIRECTORY\n  verify BUNDLE POLICY REGISTRY REQUEST\n  replay-demo NEW_DIRECTORY\n  dependency-demo NEW_DIRECTORY\n  replay WORKLOAD [NEW_DIRECTORY]\n  simulate NEW_DIRECTORY [SCENARIO [SEED]]\n  simulate-config CONFIG NEW_DIRECTORY\n\nScenarios: stable, dropout, partition, delay, tamper, replay, false-reading, mixed.\nPolicy, registry and request are trusted verifier inputs, separate from the bundle.\nReplay workloads contain trusted snapshots and expected outcomes; use trusted files.\nExit: 0 verified/all checks match; 1 verification withheld or mismatch; 2 input/operational error.\nSimulation uses virtual time, toy environmental data and public test keys. No live sensors, actuation, production keys or ZKP."
+        "veri-adam: experimental signed-event verifier\n\n  demo NEW_DIRECTORY\n  verify BUNDLE POLICY REGISTRY REQUEST\n  replay-demo NEW_DIRECTORY\n  dependency-demo NEW_DIRECTORY\n  replay WORKLOAD [NEW_DIRECTORY]\n  simulate NEW_DIRECTORY [SCENARIO [SEED]]\n  simulate-config CONFIG NEW_DIRECTORY\n  agent-simulate NEW_DIRECTORY ollama|rules\n\nScenarios: stable, dropout, partition, delay, tamper, replay, false-reading, mixed.\nPolicy, registry and request are trusted verifier inputs, separate from the bundle.\nReplay workloads contain trusted snapshots and expected outcomes; use trusted files.\nExit: 0 verified/all checks match; 1 verification withheld or mismatch; 2 input/operational error.\nSimulation uses virtual time, toy environmental data and public test keys. No live sensors, actuation, production keys or ZKP."
     );
 }
 fn main() -> ExitCode {

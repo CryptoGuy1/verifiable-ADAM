@@ -8,6 +8,7 @@
 - Independently implemented reference acceptance rules and adversarial tests.
 - Frozen development workloads, matched reports, input hashes, and virtual-time replay.
 - Deterministic two-node claim-delivery simulation with CO₂/light trajectories, faults, and offline playback.
+- Local message-driven Sensor/Aggregator/Decision actors, independent signed assessments and ballots, a nonvoting coordinator, advisory publication/withholding/expiry, and an Ollama Qwen adapter. See [agent simulation](../specs/agent-simulation-v1.md). These are local threads, not Pi services, and the old trajectory simulator remains scripted.
 
 The current software is a development prototype. It has not been deployed to the Pis, connected to real sensors, or shown a measured B3 efficiency advantage. Simulation data and public test keys must remain separate from physical research data and production keys.
 
@@ -31,4 +32,8 @@ See [research review decisions](../specs/review-decisions.md) for the verified A
 
 ## Immediate review artifact
 
-Run `cargo run --locked -- simulate runs/NEW_DIRECTORY mixed 42` and inspect the generated `simulation.html`, event trace, and report. The viewer plays a precomputed deterministic run. Read `specs/simulation-v1.md` for exactly what is modeled and what remains outside the model.
+The completed Qwen-backed development run is `runs/agents-qwen-v3/`. Serve it with `python3 scripts/run_simulation_viewer.py runs/agents-qwen-v3/simulation.html --port 8767` and open `http://127.0.0.1:8767/`. It contains four real Qwen assessments, independent signed votes and verified advisory lifecycle events. The majority at 790/830 ppm was rejected for contradicting the evidence rule. This is one development run; Qwen's explanations and classification booleans were sometimes inconsistent. No rewriting of model votes or model-accuracy claim is made.
+
+To generate a fresh agent run use `cargo run --locked --offline -- agent-simulate runs/NEW_DIRECTORY ollama`. Cold model loading is warmed up before capture; inference after capture counts against the deadline. The recorded viewer does not call Qwen again. Read `specs/agent-simulation-v1.md` for timing, messages and limitations.
+
+The earlier trajectory runner remains available as `cargo run --locked -- simulate runs/NEW_DIRECTORY mixed 42`. That path is still scripted claim delivery, as specified in `specs/simulation-v1.md`.

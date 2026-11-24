@@ -6,7 +6,16 @@ The present equal-weight rule and simulation are **ADAM-inspired**, not a reprod
 
 The software now includes signed synthetic observations, coordinator-signed decisions, individually signed ballots, a deterministic B1 public verifier, a B2 expiry-aware cache, a B3 reverse dependency index, and a separately implemented reference evaluator. A matched replay runner checks B1, B2, and B3 against declared expected outcomes and the reference. These establish a protocol and development corpus, not research novelty, physical accuracy, or hardware performance.
 
-## Run the simulation
+## Run the agent simulation with local Qwen
+
+```sh
+cargo run --locked --offline -- agent-simulate runs/agents-local ollama
+python3 scripts/run_simulation_viewer.py runs/agents-local/simulation.html --port 8767
+```
+
+Open **http://127.0.0.1:8767/**. This runs stateful Sensor, Aggregator and Decision actors through message inboxes; the Decision actor calls the installed local `qwen3:1.7b`. The viewer shows individual assessments, dissenting signed ballots, the collective advisory, withholding and expiry. Use a new output directory. The `rules` backend tests the same actors without model inference. See [the agent contract](specs/agent-simulation-v1.md) for signature bindings, real-time deadlines, fault cases and limitations. The coordinator is a nonvoting local state machine; these are local workers, not deployed Pi services. ZKP remains unimplemented.
+
+## Run the scripted trajectory simulation
 
 To view the saved example, run this from the project folder and leave the terminal running:
 

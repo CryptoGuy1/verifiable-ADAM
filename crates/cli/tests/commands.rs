@@ -11,6 +11,57 @@ fn cli(args: &[&str]) -> Output {
         .output()
         .unwrap()
 }
+
+#[test]
+fn agent_simulation_exports_real_ballots_and_preserves_existing_runs() {
+    let root = std::env::temp_dir().join(format!(
+        "veri-adam-agents-cli-{}-{}",
+        std::process::id(),
+        SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap()
+            .as_nanos()
+    ));
+    let _guard = Scratch(root.clone());
+    let path = root.to_str().unwrap();
+    assert_eq!(
+        cli(&["agent-simulate", path, "invalid"]).status.code(),
+        Some(2)
+    );
+    assert!(!root.exists());
+    let out = cli(&["agent-simulate", path, "rules"]);
+    assert!(
+        out.status.success(),
+        "{}",
+        String::from_utf8_lossy(&out.stderr)
+    );
+    let bytes = fs::read(root.join("agent-run.json")).unwrap();
+    let run: serde_json::Value = serde_json::from_slice(&bytes).unwrap();
+    assert_eq!(run["rounds"].as_array().unwrap().len(), 7);
+    assert_eq!(
+        run["rounds"][2]["bundle"]["ballots"]
+            .as_array()
+            .unwrap()
+            .len(),
+        3
+    );
+    assert_eq!(
+        run["rounds"][2]["bundle"]["ballots"][0]["payload"]["advisory"],
+        false
+    );
+    assert_eq!(run["rounds"][2]["state"], "raised");
+    assert!(
+        fs::read_to_string(root.join("simulation.html"))
+            .unwrap()
+            .contains("Agent message timeline")
+    );
+    // An existing directory must fail before model preparation or any overwrite.
+    assert_eq!(
+        cli(&["agent-simulate", path, "ollama"]).status.code(),
+        Some(2)
+    );
+    assert_eq!(bytes, fs::read(root.join("agent-run.json")).unwrap());
+}
 struct Scratch(std::path::PathBuf);
 impl Drop for Scratch {
     fn drop(&mut self) {

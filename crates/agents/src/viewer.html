@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Verifiable ADAM · Agent lab</title>
+<style>
+:root{font-family:system-ui,sans-serif;background:#eef3f4;color:#203746;line-height:1.5}*{box-sizing:border-box}body{margin:0}header{background:#142e3b;color:#fff;padding:28px max(22px,calc((100vw - 1200px)/2))}h1{margin:0;font-size:28px}header p{color:#cadbdd;max-width:900px}main{max-width:1244px;margin:auto;padding:22px}.panel{background:white;border:1px solid #d4e1e4;border-radius:12px;padding:20px;margin-bottom:18px}button,select{font:inherit;padding:9px 14px;border:1px solid #bbcdd2;border-radius:7px;background:#fff;color:inherit}button{cursor:pointer}button:disabled{opacity:.5}button.primary{background:#146d62;color:#fff}button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid #bd8a22}.controls{display:flex;gap:12px;align-items:center;flex-wrap:wrap}input[type=range]{width:100%;accent-color:#146d62}output{font-variant-numeric:tabular-nums}h2{font-size:18px;margin:0 0 12px}.small{font-size:13px;color:#5c737b}.state{font-size:28px;font-weight:700}.raised{color:#a64e10}.clear{color:#16634d}.withheld,.withdrawn{color:#94382c}.pending{color:#67767d}.cards{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}.card{background:#f6f9f9;border:1px solid #d9e5e6;border-radius:9px;padding:16px;min-height:170px}.card h3{margin:0 0 8px;font-size:16px}.vote{font-size:20px;font-weight:650}.card p{font-size:13px;margin:8px 0}.split{display:grid;grid-template-columns:1fr 1fr;gap:18px}.scroll{max-height:330px;overflow:auto}table{width:100%;border-collapse:collapse;font-size:13px}th,td{padding:9px;text-align:left;vertical-align:top;border-bottom:1px solid #dfE8e9}th{position:sticky;top:0;background:#f1f6f6}td:first-child{white-space:nowrap}label{font-size:13px}.notice{border-left:4px solid #ba8228;padding-left:12px}footer{font-size:12px;color:#5c737b;margin:20px 0}@media(max-width:800px){.cards,.split{grid-template-columns:1fr}header{padding:22px}main{padding:12px}}
+</style></head><body>
+<header><h1>Agents, evidence and collective decisions</h1><p>Two sensing workers supply signed synthetic readings. Three stateful agents assess evidence through their own inboxes, then sign individual ballots. A coordinator collects the votes and a separate verifier checks the result.</p></header>
+<main>
+<section class="panel"><p id="viewer-status" role="status">Starting controls. If this stays visible, allow JavaScript for this local page.</p><noscript>JavaScript is required for playback.</noscript><div class="controls"><button id="play" class="primary" disabled>Play</button><button id="restart" disabled>Restart</button><label for="speed">Playback speed</label><select id="speed"><option value="1">1×</option><option value="5" selected>5×</option><option value="10">10×</option></select><output id="clock"></output><span id="mode" class="small"></span></div><label for="seek">Select time</label><input id="seek" type="range" min="0" value="0" step="10"><label for="round-select">Jump to a round</label> <select id="round-select"></select><p class="small">Playback of recorded agent execution. Play does not call Qwen again. Model calls occurred when this run was generated.</p></section>
+<section class="panel"><h2>Collective advisory</h2><div id="advisory" class="state pending">Waiting</div><p id="advisory-detail"></p><div id="freshness" class="small"></div><p class="small">“No advisory” is a valid low-CO₂ decision. “Withheld” means the system could not establish an acceptable decision.</p></section>
+<section class="panel"><h2 id="round-title">Current round</h2><p id="readings"></p><div class="cards"><article class="card"><h3>Sensor Agent · voter-a</h3><div id="sensor-vote" class="vote">Waiting</div><p id="sensor-reason"></p><div id="sensor-ballot" class="small"></div></article><article class="card"><h3>Aggregator Agent · voter-b</h3><div id="aggregator-vote" class="vote">Waiting</div><p id="aggregator-reason"></p><div id="aggregator-ballot" class="small"></div></article><article class="card"><h3>Decision Agent · voter-c</h3><div id="decision-vote" class="vote">Waiting</div><p id="decision-reason"></p><div id="decision-ballot" class="small"></div></article></div></section>
+<div class="split"><section class="panel"><h2>Coordinator</h2><p id="coordinator"></p><p class="small">Two matching eligible votes are required. The coordinator does not cast a vote. Missing voters do not lower quorum.</p></section><section class="panel"><h2>Independent verification</h2><p id="verification"></p><p class="small">The verifier checks signatures, context, evidence, the public fusion rule, quorum and freshness. It does not prove that a model's explanation or a sensor's reading is physically true.</p></section></div>
+<section class="panel"><h2>Agent message timeline</h2><div class="scroll"><table><thead><tr><th>Time</th><th>Agent</th><th>Message / action</th><th>Details</th></tr></thead><tbody id="events"></tbody></table></div></section>
+<footer><p class="notice">Local development actors on one computer, public test keys and synthetic readings. Three logical voters are not three independent machines. Equal-weight fusion is ADAM-inspired; original ADAM fusion/reasoner/governance reproduction and ZKP are not implemented.</p><p>Model-call elapsed time contributes to evidence age and the 20-second round deadline. The 30-second evidence lifetime is a development setting. Gaps between rounds are simulated; this is not a Pi performance or energy benchmark. New evidence invalidates the previous round's support; final expiry explicitly withdraws the last advisory.</p></footer>
+</main>
+<script id="simulation-data" type="application/json">__SIMULATION_DATA__</script>
+<script>
+'use strict';
+try {
+const $=id=>document.getElementById(id),data=JSON.parse($('simulation-data').textContent),duration=data.duration_ms;
+const labels={pending:'Awaiting a collective decision',raised:'CO₂ advisory raised',clear:'No CO₂ advisory',withheld:'Decision withheld',withdrawn:'Advisory withdrawn — evidence expired'};
+const reasons={current_support_verified:'The signed votes and current evidence support this decision.',classification_mismatch:'The majority chose a class that contradicts the signed readings and the agreed rule.',insufficient_matching_ballots:'Not enough matching signed ballots arrived.',support_expired:'The supporting readings are too old.', 'invalid signature':'A signed reading was changed or its signature did not match.', 'missing source evidence':'One of the required sensor readings is missing.'};
+const reasonText=reason=>reasons[reason]||reason;
+let time=0,playing=false,last=null;
+$('seek').max=duration;$('mode').textContent=data.mode;
+data.rounds.forEach((r,i)=>{const o=document.createElement('option');o.value=String(i);o.textContent=`${i+1}. ${r.name}`;$('round-select').appendChild(o);});
+function render(t){
+ $('clock').textContent=`${(t/1000).toFixed(2)} / ${(duration/1000).toFixed(1)} s`;$('seek').value=t;
+ const trace=data.events.filter(e=>e.time_ms<=t),event=trace.at(-1),index=event?event.round:0,r=data.rounds[index];
+ $('round-select').value=String(index);$('round-title').textContent=`Round ${index+1}: ${r.name}`;
+ $('readings').textContent=r.readings.length?r.readings.map(m=>`${m.payload.signer_id}: ${m.payload.co2_ppm} ppm`).join(' · '):'No readings';
+ const stateEvent=trace.filter(e=>e.advisory_state!==null).at(-1),state=stateEvent?stateEvent.advisory_state:'pending';
+ $('advisory').textContent=labels[state]||state;$('advisory').className=`state ${state}`;$('advisory-detail').textContent=stateEvent?reasonText(stateEvent.detail):'';
+ const expires=r.started_at_ms+data.policy.ttl_ms;
+ $('freshness').textContent=`Evidence age: ${Math.max(0,(t-r.started_at_ms)/1000).toFixed(1)} s · remaining lifetime: ${Math.max(0,(expires-t)/1000).toFixed(1)} s`;
+ for(const [role,voter] of [['sensor','voter-a'],['aggregator','voter-b'],['decision','voter-c']]){
+   const arrived=trace.some(e=>e.round===index&&e.agent===voter&&e.kind==='signed-assessment'),a=arrived?r.assessments.find(a=>a.payload.voter_id===voter):null;
+   const absent=trace.some(e=>e.round===index&&e.kind==='absent-voter'&&e.detail.startsWith(voter+':'));
+   $(role+'-vote').textContent=a?(a.payload.advisory?'ADVISORY':'NO ADVISORY'):absent?'No eligible response':'Waiting for assessment';
+   $(role+'-reason').textContent=a?a.payload.explanation:absent?r.absent.find(s=>s.startsWith(voter+':')):'';
+   $(role+'-ballot').textContent=trace.some(e=>e.round===index&&e.agent===voter&&e.kind==='signed-ballot')?'Signed ballot delivered':a?'Signed assessment delivered; ballot not yet delivered':'';
+ }
+ const proposal=trace.filter(e=>e.round===index&&e.kind==='collective-proposal').at(-1),done=t>=r.completed_at_ms;
+ $('coordinator').textContent=done?reasonText(r.reason):proposal?proposal.detail:'Collecting independent signed assessments.';
+ const expiredCheck=t>=expires&&r.expiry_check,check=expiredCheck?r.expiry_check:r.verification,reference=expiredCheck?r.expiry_reference_outcome:r.reference_outcome;
+ $('verification').textContent=done?(check?`Checker: ${check.outcome} · reference: ${reference}. ${reasonText(check.reason)}`:'No collective bundle released: '+reasonText(r.reason)):'Awaiting a collective bundle.';
+ $('events').replaceChildren();for(const e of trace.slice(-60)){const row=document.createElement('tr');for(const value of[`${(e.time_ms/1000).toFixed(2)}s`,e.agent,e.kind,e.detail]){const td=document.createElement('td');td.textContent=value;row.appendChild(td);}$('events').appendChild(row);}
+}
+function pause(){playing=false;last=null;$('play').textContent='Play';}
+$('play').addEventListener('click',()=>{if(time>=duration)time=0;playing=!playing;last=null;$('play').textContent=playing?'Pause':'Play';render(time);});
+$('restart').addEventListener('click',()=>{pause();time=0;render(time);});
+$('seek').addEventListener('input',()=>{time=Number($('seek').value);last=null;render(time);});
+$('round-select').addEventListener('change',()=>{pause();const r=data.rounds[Number($('round-select').value)];time=r.completed_at_ms;render(time);});
+function tick(stamp){if(playing){if(last!==null)time=Math.min(duration,time+(stamp-last)*Number($('speed').value));last=stamp;render(time);if(time>=duration)pause();}requestAnimationFrame(tick);}
+render(0);requestAnimationFrame(tick);$('play').disabled=false;$('restart').disabled=false;$('viewer-status').hidden=true;
+}catch(error){document.getElementById('viewer-status').textContent='Playback could not start: '+error.message;console.error(error);}
+</script></body></html>
