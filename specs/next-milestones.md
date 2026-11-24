@@ -2,11 +2,11 @@
 
 ## Current delivery
 
-The workspace implements an experimental B1 public-data path, independent reference outcomes, a file-based CLI, synthetic corpus, exact signature encoding, and adversarial tests. It is ready for review and further implementation, not for claims of a completed two-Pi experiment. The procurement, power/cooling validation, sensor calibration, and Pi deployment work remain open.
+The workspace implements B1 public verification, B2 ordinary caching, independent reference outcomes, a matched replay runner, exact signature encoding, and adversarial tests. The frozen 31-check workload and replay CLI are documented in [the B2 contract](b2-cache.md). It is ready for review and further implementation, not for claims of a completed two-Pi experiment. Procurement, power/cooling validation, sensor calibration, and Pi deployment remain open.
 
 ## Ordinary caching before dependency optimization
 
-Specify B2 as a competent expiry-aware cache. It should retain authenticated record and policy/registry bindings, per-record validation results, and valid decision results with required support horizons/checkpoints. It must already preserve reuse when an unrelated observation changes. Do not invalidate every cached decision on any global update just to create a B3 advantage.
+B2 now retains positive signature results and content-bound decision-processing certificates with required support horizons/checkpoints. Time and required heads are rechecked on every decision hit. Full policy/registry contents are bound even without a version bump. It preserves reuse on unrelated updates and harmless transport reordering. Keep these conventional capabilities in place when comparing B3.
 
 B3 needs an explicitly additional operation, such as a reverse index for affected claims or incremental evaluation of shared computations. If B2 already has the same mechanism, compare against that stronger baseline and report equivalence. Count dependency-index construction, memory, update propagation, and lookups as well as signature and rule work. Stable, sparse, bursty, and shared-support workloads may favor either strategy.
 

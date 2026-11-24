@@ -96,3 +96,65 @@ fn frozen_demo_matches_expected_outcomes() {
         );
     }
 }
+
+#[test]
+fn replay_writes_reproducible_files_and_preserves_mismatches() {
+    let root = std::env::temp_dir().join(format!(
+        "veri-adam-replay-{}-{}",
+        std::process::id(),
+        SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap()
+            .as_nanos()
+    ));
+    fs::create_dir(&root).unwrap();
+    let _guard = Scratch(root.clone());
+    let first = root.join("first");
+    let out = cli(&["replay-demo", first.to_str().unwrap()]);
+    assert_eq!(
+        out.status.code(),
+        Some(0),
+        "{}",
+        String::from_utf8_lossy(&out.stderr)
+    );
+    let report: serde_json::Value =
+        serde_json::from_slice(&fs::read(first.join("report.json")).unwrap()).unwrap();
+    assert_eq!(report["all_matched"], true);
+    assert_eq!(report["summary"]["checks"], 31);
+    assert_eq!(
+        cli(&["replay-demo", first.to_str().unwrap()]).status.code(),
+        Some(2)
+    );
+    let workload = first.join("workload.json");
+    let second = root.join("second");
+    assert!(
+        cli(&[
+            "replay",
+            workload.to_str().unwrap(),
+            second.to_str().unwrap()
+        ])
+        .status
+        .success()
+    );
+    assert_eq!(
+        fs::read(first.join("report.json")).unwrap(),
+        fs::read(second.join("report.json")).unwrap()
+    );
+    let manifest: serde_json::Value =
+        serde_json::from_slice(&fs::read(first.join("manifest.json")).unwrap()).unwrap();
+    let mut w: veri_adam_replay::Workload =
+        serde_json::from_slice(&fs::read(&workload).unwrap()).unwrap();
+    assert_eq!(
+        manifest["workload_sha256"],
+        veri_adam_protocol::digest(&serde_json::to_vec(&w).unwrap())
+    );
+    assert_eq!(manifest["timing_measured"], false);
+    w.steps[0].expected = veri_adam_protocol::Outcome::Rejected;
+    let bad = root.join("wrong-expected.json");
+    fs::write(&bad, serde_json::to_vec(&w).unwrap()).unwrap();
+    let out = cli(&["replay", bad.to_str().unwrap()]);
+    assert_eq!(out.status.code(), Some(1));
+    let report: serde_json::Value = serde_json::from_slice(&out.stdout).unwrap();
+    assert_eq!(report["all_matched"], false);
+    assert_eq!(report["summary"]["mismatches"], 1);
+}

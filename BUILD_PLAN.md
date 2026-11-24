@@ -8,6 +8,8 @@ This checklist records concerns to resolve during implementation. Unchecked item
 
 The project now has a Rust workspace with `protocol`, `verification`, `reference`, and `cli` crates. It implements signed synthetic measurements, signed proposals/ballots, the provisional B1 checker, explicit current/historical outcomes, and adversarial fixtures. Read [README.md](README.md), [the provisional protocol](specs/protocol-v1.md), and [the next milestones](specs/next-milestones.md). The larger checklist below remains open wherever final research semantics or actual Pi validation are still required.
 
+The second software milestone adds `cache` and `replay`: bounded B2 signature/decision caches, fresh time/checkpoint checks, a 31-step frozen synthetic workload, saved reports/manifests, and maintenance counters. The [B2 contract](specs/b2-cache.md) defines what is reused and what B3 must preserve. Final research baseline freezing, physical deployment, and confirmatory evaluation remain open.
+
 ## Language and implementation direction
 
 Use **Rust for the protocol, verification, cache, dependency manager, replay engine, and command-line services**, and **Python for sensor acquisition, experiment orchestration, and analysis**.

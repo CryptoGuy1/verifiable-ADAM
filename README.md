@@ -2,7 +2,7 @@
 
 Verifiable ADAM investigates whether dependency-aware verification can reduce repeated work compared with a competent expiry-aware cache while preserving the same acceptance rules. Our physical testbed is one Pi 5 and one Pi 4, using CO₂ and light observations.
 
-The first software milestone is runnable: signed synthetic observations, a coordinator-signed decision, individually signed ballots, a deterministic public verifier, and a separately implemented reference evaluator. It establishes a starting protocol and test corpus. It does not establish research novelty, physical measurement accuracy, or hardware performance.
+The software now includes signed synthetic observations, coordinator-signed decisions, individually signed ballots, a deterministic B1 public verifier, a B2 expiry-aware cache, and a separately implemented reference evaluator. A matched replay runner checks B1 and B2 against declared expected outcomes and the reference. These establish a protocol and development corpus, not research novelty, physical accuracy, or hardware performance.
 
 ## Run the signed event demonstration
 
@@ -32,6 +32,17 @@ The verifier prints JSON containing its outcome, reason, decision ID, support ex
 
 **Trust boundary:** policy, registry, and request files are trusted verifier configuration. Do not accept them from a claimant along with its bundle. The request supplies the expected event, nonce, check time, check kind, and authenticated evidence checkpoints. In this demo those files are synthetic fixtures, not a secure provisioning system.
 
+## Run the B2 cache replay
+
+```sh
+cargo run --locked -- replay-demo runs/b2-demo
+cargo run --locked -- replay workloads/b2-currentness-v1.json runs/b2-replay
+```
+
+Each command uses a new output directory and saves a workload, full report, and hash manifest. The frozen workload has 31 synthetic checks covering stable evidence, unrelated updates, exact expiry, historical checks, replacement, malformed claims, revocation, quorum failures, and restart. A replay exits 0 only when B1, B2, the reference, and expected outcomes all agree; mismatch exits 1 and input/operational error exits 2. Run `replay WORKLOAD` without an output directory to print full JSON.
+
+B2 reuses valid signatures and decision-processing results while checking time and required source heads on every decision hit. Its complete policy/registry/content bindings prevent stale cached authorization. It already avoids revalidation for unrelated updates. The report includes cache maintenance, key hashing/normalization, and occupancy counters as well as saved signature work. These are diagnostic counts, not timing or hardware performance measurements. See [the B2 contract](specs/b2-cache.md).
+
 ## Code structure
 
 | Path | Responsibility |
@@ -39,11 +50,14 @@ The verifier prints JSON containing its outcome, reason, decision ID, support ex
 | `crates/protocol` | Typed records, explicit signing encodings, SHA-256 IDs, Ed25519 signatures, public demo fixtures |
 | `crates/verification` | B1 authentication, source checks, deterministic classification, quorum, currentness |
 | `crates/reference` | Independent rule/currentness evaluator sharing only record validation, encoding, and crypto primitives |
+| `crates/cache` | B2 bounded signature/decision caches, fresh time/head checks, maintenance counters |
+| `crates/replay` | Matched B1/B2/reference checks over trusted ordered snapshots |
 | `crates/cli` | New demo runs, bounded JSON input, machine-readable verification reports |
 | `specs/protocol-v1.md` | Implemented provisional semantics and exact binary encodings |
 | `specs/next-milestones.md` | Remaining work and baseline fairness constraints |
 | `tests/vectors` | Fixed encoding/hash vector and standard signature-vector coverage |
 | `tests/corpus/demo-v1` | Frozen synthetic bundles, trusted configuration, and expected outcomes |
+| `workloads/b2-currentness-v1.json` | Frozen synthetic currentness and attack replay |
 | `docs` | Build context, hardware inventory, and procurement |
 
 Python will supply acquisition, orchestration, and analysis later. We have not created empty sensor drivers or claimed hardware integration before selecting and receiving the boards. Existing Elsevier IoT source code has not been copied into this project.
@@ -56,7 +70,7 @@ cargo test --workspace --locked
 cargo clippy --workspace --all-targets --locked -- -D warnings
 ```
 
-After dependencies are fetched, add `--offline` to test/build commands for repeatable local checks. Tests cover signed tampering, event/nonce replay, policy and registry changes, duplicate voters and sources, missing quorum, exact expiry boundaries, replacement checkpoints, malformed input, numerical bounds, canonical encoding, CLI exit codes, and a deterministic matched sweep.
+After dependencies are fetched, add `--offline` to test/build commands for repeatable local checks. Tests cover signed tampering, event/nonce replay, policy and registry changes, duplicate voters and sources, missing quorum, exact expiry boundaries, replacement checkpoints, malformed input, numerical bounds, canonical encoding, CLI exit codes, cache poisoning/eviction/restart, saved replays, and deterministic matched sweeps.
 
 ## Scope of this delivery
 
@@ -64,6 +78,6 @@ The provisional public rule is an equally weighted mean CO₂ threshold, calcula
 
 Nominal mode requires two matching ballots from three registered logical voters. Explicit degraded mode requires both of two voters. The demo maps three logical voters onto two node labels; it does not demonstrate three physically independent voters or Byzantine fault tolerance.
 
-B2 caching, B3 dependency updates, alternative support, production key provisioning, persistent anti-replay state, live sensor acquisition, network services, audit-log durability, action release, and B4 private proofs are not implemented. Currentness is checked against the caller's trusted snapshot; there is no atomic live check-and-release mechanism yet. A signed false reading can still pass authentication.
+B3 dependency updates, alternative support, production key provisioning, persistent anti-replay state, live sensor acquisition, network services, audit-log durability, action release, and B4 private proofs are not implemented. B2 is currently an in-memory library used by the replay runner; separate `verify` invocations remain cold B1 checks. Currentness is checked against the caller's trusted snapshot; there is no atomic live check-and-release mechanism yet. A signed false reading can still pass authentication.
 
 See [BUILD_PLAN.md](BUILD_PLAN.md) for the larger checklist and [the next milestones](specs/next-milestones.md) for the implementation sequence.

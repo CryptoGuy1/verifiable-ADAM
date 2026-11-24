@@ -30,14 +30,57 @@ fn write<T: Serialize>(dir: &Path, name: &str, value: &T) -> Result<(), String> 
         .and_then(|_| f.write_all(b"\n"))
         .map_err(|e| e.to_string())
 }
+
+fn new_directory(path: &str) -> Result<&Path, String> {
+    let dir = Path::new(path);
+    if let Some(parent) = dir.parent().filter(|p| !p.as_os_str().is_empty()) {
+        fs::create_dir_all(parent).map_err(|e| e.to_string())?;
+    }
+    fs::create_dir(dir).map_err(|e| format!("Use a new output directory: {e}"))?;
+    Ok(dir)
+}
+
+fn replay(workload: veri_adam_replay::Workload, output: Option<&str>) -> Result<bool, String> {
+    let report = veri_adam_replay::run(&workload)?;
+    if let Some(output) = output {
+        let dir = new_directory(output)?;
+        write(dir, "workload.json", &workload)?;
+        write(dir, "report.json", &report)?;
+        let normalized = serde_json::to_vec(&workload).map_err(|e| e.to_string())?;
+        write(
+            dir,
+            "manifest.json",
+            &serde_json::json!({
+                "software_version": env!("CARGO_PKG_VERSION"),
+                "workload_sha256": digest(&normalized),
+                "hash_encoding": "compact serde_json serialization of the typed workload",
+                "data_kind": workload.data_kind,
+                "run_kind": "software_counter_replay",
+                "timing_measured": false,
+                "energy_measured": false
+            }),
+        )?;
+        println!("Replay files: {}", dir.display());
+        println!(
+            "{}",
+            serde_json::to_string_pretty(&report.summary).map_err(|e| e.to_string())?
+        );
+        println!(
+            "All outcomes match expected, B1, B2 and reference: {}",
+            report.all_matched
+        );
+    } else {
+        println!(
+            "{}",
+            serde_json::to_string_pretty(&report).map_err(|e| e.to_string())?
+        );
+    }
+    Ok(report.all_matched)
+}
 fn run(args: &[String]) -> Result<bool, String> {
     match args {
         [cmd, dir] if cmd == "demo" => {
-            let dir = Path::new(dir);
-            if let Some(parent) = dir.parent().filter(|p| !p.as_os_str().is_empty()) {
-                fs::create_dir_all(parent).map_err(|e| e.to_string())?;
-            }
-            fs::create_dir(dir).map_err(|e| format!("Use a new output directory: {e}"))?;
+            let dir = new_directory(dir)?;
             let (policy, registry, request, bundle) =
                 demo::fixture(CrewMode::NominalThree, [900, 850]);
             write(dir, "policy.json", &policy)?;
@@ -66,6 +109,9 @@ fn run(args: &[String]) -> Result<bool, String> {
             );
             Ok(true)
         }
+        [cmd, dir] if cmd == "replay-demo" => replay(veri_adam_replay::demo::workload(), Some(dir)),
+        [cmd, input] if cmd == "replay" => replay(read(input)?, None),
+        [cmd, input, dir] if cmd == "replay" => replay(read(input)?, Some(dir)),
         [cmd, bundle, policy, registry, request] if cmd == "verify" => {
             let b = read(bundle)?;
             let p = read(policy)?;
@@ -101,7 +147,7 @@ fn run(args: &[String]) -> Result<bool, String> {
 }
 fn help() {
     println!(
-        "veri-adam: experimental signed-event verifier\n\n  demo NEW_DIRECTORY\n  verify BUNDLE POLICY REGISTRY REQUEST\n\nPolicy, registry and request are trusted verifier inputs, separate from the bundle.\nExit: 0 verified/success; 1 rejected, expired or unconfirmed; 2 input/operational error.\nNo physical actuation, live sensing, production keys, caching or ZKP in this milestone."
+        "veri-adam: experimental signed-event verifier\n\n  demo NEW_DIRECTORY\n  verify BUNDLE POLICY REGISTRY REQUEST\n  replay-demo NEW_DIRECTORY\n  replay WORKLOAD [NEW_DIRECTORY]\n\nPolicy, registry and request are trusted verifier inputs, separate from the bundle.\nReplay workloads contain trusted snapshots and expected outcomes; use trusted files.\nExit: 0 verified/all replay checks match; 1 verification withheld or replay mismatch; 2 input/operational error.\nB2 uses in-memory caches across replay steps. No live sensing, actuation, production keys, B3 or ZKP."
     );
 }
 fn main() -> ExitCode {

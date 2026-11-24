@@ -3,14 +3,15 @@ use serde::Serialize;
 use std::collections::BTreeSet;
 use veri_adam_protocol::*;
 
-#[derive(Debug, Default, Serialize)]
+#[derive(Debug, Default, Clone, Serialize)]
 pub struct Work {
     pub signature_checks: u64,
+    pub signature_cache_hits: u64,
     pub measurements_evaluated: u64,
     pub ballots_evaluated: u64,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Clone, Serialize)]
 pub struct Report {
     pub outcome: Outcome,
     pub reason: String,
@@ -20,6 +21,27 @@ pub struct Report {
 }
 
 pub fn check(bundle: &Bundle, policy: &Policy, registry: &Registry, request: &Request) -> Report {
+    check_with_authenticator(bundle, policy, registry, request, &mut |bytes, sig, key| {
+        verify(bytes, sig, key).map(|()| Authentication::Checked)
+    })
+}
+
+/// A positive cached signature is not a cached authorization or freshness result.
+pub enum Authentication {
+    Checked,
+    Reused,
+}
+
+/// The backend is trusted verifier code: it must report success only for a valid
+/// signature or an exact previously verified (bytes, signature, public key) tuple.
+/// Use `check` for uncached verification of untrusted peer input.
+pub fn check_with_authenticator(
+    bundle: &Bundle,
+    policy: &Policy,
+    registry: &Registry,
+    request: &Request,
+    authenticate: &mut impl FnMut(&[u8], &str, &str) -> Result<Authentication, String>,
+) -> Report {
     let mut report = Report {
         outcome: Outcome::Rejected,
         reason: String::new(),
@@ -27,7 +49,7 @@ pub fn check(bundle: &Bundle, policy: &Policy, registry: &Registry, request: &Re
         support_expires_at_ms: None,
         work: Work::default(),
     };
-    match evaluate(bundle, policy, registry, request, &mut report) {
+    match evaluate(bundle, policy, registry, request, &mut report, authenticate) {
         Ok((outcome, reason)) => {
             report.outcome = outcome;
             report.reason = reason.into();
@@ -39,12 +61,31 @@ pub fn check(bundle: &Bundle, policy: &Policy, registry: &Registry, request: &Re
     report
 }
 
+fn authenticate_record(
+    bytes: &[u8],
+    signature: &str,
+    key: &str,
+    work: &mut Work,
+    authenticate: &mut impl FnMut(&[u8], &str, &str) -> Result<Authentication, String>,
+) -> Result<(), String> {
+    match authenticate(bytes, signature, key) {
+        Ok(Authentication::Reused) => work.signature_cache_hits += 1,
+        Ok(Authentication::Checked) => work.signature_checks += 1,
+        Err(reason) => {
+            work.signature_checks += 1;
+            return Err(reason);
+        }
+    }
+    Ok(())
+}
+
 fn evaluate(
     b: &Bundle,
     p: &Policy,
     reg: &Registry,
     req: &Request,
     report: &mut Report,
+    authenticate: &mut impl FnMut(&[u8], &str, &str) -> Result<Authentication, String>,
 ) -> Result<(Outcome, &'static str), String> {
     p.validate(reg)?;
     context(VERSION, &req.event_id, &req.nonce)?;
@@ -65,11 +106,12 @@ fn evaluate(
     let coordinator = reg
         .member(&d.coordinator_id, Role::Coordinator)
         .ok_or("unauthorized_coordinator")?;
-    report.work.signature_checks += 1;
-    verify(
+    authenticate_record(
         &d.canonical_bytes(),
         &b.decision.signature,
         &coordinator.public_key,
+        &mut report.work,
+        authenticate,
     )?;
     let mut sources = BTreeSet::new();
     let mut ids = Vec::new();
@@ -89,8 +131,13 @@ fn evaluate(
         let member = reg
             .member(&m.signer_id, Role::Sensor)
             .ok_or("unauthorized_sensor")?;
-        report.work.signature_checks += 1;
-        verify(&m.canonical_bytes(), &signed.signature, &member.public_key)?;
+        authenticate_record(
+            &m.canonical_bytes(),
+            &signed.signature,
+            &member.public_key,
+            &mut report.work,
+            authenticate,
+        )?;
         if m.captured_at_ms > req.now_ms {
             return Err("future_measurement".into());
         }
@@ -131,11 +178,12 @@ fn evaluate(
         let member = reg
             .member(&ballot.voter_id, Role::Voter)
             .ok_or("unauthorized_voter")?;
-        report.work.signature_checks += 1;
-        verify(
+        authenticate_record(
             &ballot.canonical_bytes(),
             &signed.signature,
             &member.public_key,
+            &mut report.work,
+            authenticate,
         )?;
         matching += usize::from(ballot.advisory == d.advisory);
         report.work.ballots_evaluated += 1;

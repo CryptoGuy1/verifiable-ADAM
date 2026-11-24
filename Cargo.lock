@@ -326,6 +326,17 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a2c754d6c33795a1c324727428e5a7dedb5b06195f9890bdbcba760d3e246563"
 
 [[package]]
+name = "veri-adam-cache"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "serde_json",
+ "veri-adam-protocol",
+ "veri-adam-reference",
+ "veri-adam-verification",
+]
+
+[[package]]
 name = "veri-adam-cli"
 version = "0.1.0"
 dependencies = [
@@ -333,6 +344,7 @@ dependencies = [
  "serde_json",
  "veri-adam-protocol",
  "veri-adam-reference",
+ "veri-adam-replay",
  "veri-adam-verification",
 ]
 
@@ -352,6 +364,18 @@ name = "veri-adam-reference"
 version = "0.1.0"
 dependencies = [
  "veri-adam-protocol",
+]
+
+[[package]]
+name = "veri-adam-replay"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "serde_json",
+ "veri-adam-cache",
+ "veri-adam-protocol",
+ "veri-adam-reference",
+ "veri-adam-verification",
 ]
 
 [[package]]
