@@ -1,10 +1,16 @@
 # Verifiable ADAM build plan and open concerns
 
+**MANDATORY SPECIFICATION CHECK:** Follow [AGENTS.md](AGENTS.md) and [the requirements traceability register](specs/requirements-traceability.md) before implementation, simulation or demo work. Existing code and passing fixtures do not authorize different requirements. On an unapproved deviation, give a **SPEC DRIFT WARNING** identifying the source, mismatch, impact and required resolution before changing the affected behaviour.
+
+**Known drift:** the current equal-weight, boolean-only decision path and its requirement that crew classification equal the fused threshold are provisional implementation choices, not instructions in the client refinement. They are not the compliant ADAM pipeline. Preserve their signed records as legacy evidence while implementing the agreed weighted, role-specific, governance-checked pipeline. The register records current user-approved proof and procurement scope.
+
 This is a new project based on the accepted veri-ADAM proposal and its CO₂ experimental refinement. Its main experiment compares dependency-aware verification with a competent expiry-aware cache under identical acceptance rules. An efficiency advantage is a hypothesis, not an established result.
 
 This checklist records concerns to resolve during implementation. Unchecked items are open decisions, not completed capabilities. The structure below is a proposed starting architecture; no previous project code has been copied.
 
 ## First implementation milestone
+
+**Corrective decision-stage implementation:** `crates/decision` now supplies shared weighted calibration/fusion, temporal Sensor logic, complete seven-field recommendations, role-specific ballots, strict crew formation/quorum, competing-recommendation selection, final assembly, repair/fallback and application governance. Source mapping and configurable-policy boundaries are in [the decision-stage contract](specs/adam-decision-stage.md). Tests cover both directions of legitimate fusion/crew disagreement and preserve selected confidence separately from crew support. This is partial progress on REQ-01/03/04, not completion of the signed v2 protocol. Records explicitly await authenticated durable recording and cannot claim release. Existing agent workers/UI still use the legacy path until the versioned integration milestone; semantic retrieval, ZKP, runtime dependencies and durable audit remain open.
 
 The project now has a Rust workspace with `protocol`, `verification`, `reference`, and `cli` crates. It implements signed synthetic measurements, signed proposals/ballots, the provisional B1 checker, explicit current/historical outcomes, and adversarial fixtures. Read [README.md](README.md), [the provisional protocol](specs/protocol-v1.md), and [the next milestones](specs/next-milestones.md). The larger checklist below remains open wherever final research semantics or actual Pi validation are still required.
 

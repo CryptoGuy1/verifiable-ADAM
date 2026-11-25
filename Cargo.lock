@@ -354,11 +354,21 @@ dependencies = [
  "serde",
  "serde_json",
  "veri-adam-agents",
+ "veri-adam-decision",
  "veri-adam-protocol",
  "veri-adam-reference",
  "veri-adam-replay",
  "veri-adam-simulation",
  "veri-adam-verification",
+]
+
+[[package]]
+name = "veri-adam-decision"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "serde_json",
+ "veri-adam-protocol",
 ]
 
 [[package]]

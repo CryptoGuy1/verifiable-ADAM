@@ -13,6 +13,78 @@ fn cli(args: &[&str]) -> Output {
 }
 
 #[test]
+fn weighted_decision_stage_uses_calibration_and_does_not_claim_authenticated_release() {
+    let root = std::env::temp_dir().join(format!(
+        "adam-stage-{}-{}",
+        std::process::id(),
+        SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap()
+            .as_nanos()
+    ));
+    let _guard = Scratch(root.clone());
+    let path = root.to_str().unwrap();
+    assert_eq!(cli(&["adam-run", path, "unknown"]).status.code(), Some(2));
+    assert!(!root.exists());
+    let output = cli(&["adam-run", path, "rules"]);
+    assert!(
+        output.status.success(),
+        "{}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+    let bytes = fs::read(root.join("decision-stage-run.json")).unwrap();
+    let records: serde_json::Value = serde_json::from_slice(&bytes).unwrap();
+    assert_eq!(records.as_array().unwrap().len(), 5);
+    assert_eq!(records[0]["fusion"]["fused_ppm"], 798.0);
+    assert_eq!(records[0]["final_classification"], "NORMAL");
+    assert_eq!(
+        records[1]["final_decision"]["recommended_action"],
+        "VentilationAdvisory"
+    );
+    assert_eq!(records[2]["sensor_assessment"]["classification"], "ANOMALY");
+    assert_eq!(
+        records[3]["eligible_roles"],
+        serde_json::json!(["sensor", "decision"])
+    );
+    assert_eq!(records[4]["status"], "unresolved");
+    assert!(
+        records
+            .as_array()
+            .unwrap()
+            .iter()
+            .all(|r| r["action_released"] == false && r["authenticated_record"] == false)
+    );
+    let evaluated = cli(&[
+        "adam-evaluate",
+        root.join("event-1.json").to_str().unwrap(),
+        root.join("policy.json").to_str().unwrap(),
+        root.join("calibration-profile.json").to_str().unwrap(),
+    ]);
+    assert!(evaluated.status.success());
+    let r: serde_json::Value = serde_json::from_slice(&evaluated.stdout).unwrap();
+    assert_eq!(r["fusion"]["fused_ppm"], 798.0);
+    let c = root.join("recalibrated");
+    assert!(
+        cli(&[
+            "adam-calibrate",
+            root.join("calibration-input.json").to_str().unwrap(),
+            c.to_str().unwrap()
+        ])
+        .status
+        .success()
+    );
+    assert_eq!(
+        fs::read(root.join("calibration-profile.json")).unwrap(),
+        fs::read(c.join("calibration-profile.json")).unwrap()
+    );
+    assert_eq!(cli(&["adam-run", path, "ollama"]).status.code(), Some(2));
+    assert_eq!(
+        bytes,
+        fs::read(root.join("decision-stage-run.json")).unwrap()
+    );
+}
+
+#[test]
 fn agent_simulation_exports_real_ballots_and_preserves_existing_runs() {
     let root = std::env::temp_dir().join(format!(
         "veri-adam-agents-cli-{}-{}",

@@ -1,10 +1,24 @@
 # Verifiable ADAM
 
+**Specification alignment warning:** The current demo uses provisional equal-weight, boolean-only decision semantics and is not the completed client-specified ADAM workflow. See [requirements and known gaps](specs/requirements-traceability.md). All further implementation and demo work must follow [AGENTS.md](AGENTS.md); deviations require an explicit **SPEC DRIFT WARNING** before proceeding with the affected change.
+
 Verifiable ADAM investigates whether dependency-aware verification can reduce repeated work compared with a competent expiry-aware cache while preserving the same acceptance rules. Our physical testbed is one Pi 5 and one Pi 4, using CO₂ and light observations.
 
 The present equal-weight rule and simulation are **ADAM-inspired**, not a reproduction of original ADAM's weighted fusion, role-specific ballots, reasoner, and governance. Equivalence with a strong ordinary indexed cache is the working hypothesis for the current B3 index. See [the review decisions](specs/review-decisions.md) for the comparison, privacy-format, and data-collection gates.
 
 The software now includes signed synthetic observations, coordinator-signed decisions, individually signed ballots, a deterministic B1 public verifier, a B2 expiry-aware cache, a B3 reverse dependency index, and a separately implemented reference evaluator. A matched replay runner checks B1, B2, and B3 against declared expected outcomes and the reference. These establish a protocol and development corpus, not research novelty, physical accuracy, or hardware performance.
+
+## Weighted ADAM decision stage
+
+The corrective `decision` module implements paired-reference inverse-variance calibration, weighted fusion/dispersion, temporal Sensor assessment, the seven-field recommendation, recommendation selection, strict crew quorum, final action alignment and governance. It preserves genuine majority disagreement with the fused result. See [the source mapping and limits](specs/adam-decision-stage.md).
+
+```sh
+cargo run --locked --offline -- adam-run runs/adam-stage-new rules
+# Uses local qwen3:1.7b after model preparation; choose a new directory.
+cargo run --locked --offline -- adam-run runs/adam-stage-qwen-new ollama
+```
+
+These commands export inspectable decision-stage records and explicit policies/calibration. They do not release an advisory: versioned signed-record/agent integration, semantic retrieval, durable recording, private proofs and dependency integration remain unfinished. The older browser demo below still uses legacy v1 semantics; it has not been silently changed or presented as the corrected workflow.
 
 ## Run the agent simulation with local Qwen
 
@@ -97,6 +111,7 @@ On this synthetic workload B2 and B3 perform the same 23 signature checks. B3 sa
 | `crates/dependencies` | B3 reverse source/claim index, snapshot reconciliation, bounded metadata cleanup |
 | `crates/replay` | Matched B1/B2/B3/reference checks over trusted ordered snapshots |
 | `crates/simulation` | Deterministic environmental signals, claim-delivery faults, independent scenario expectations, offline playback |
+| `crates/decision` | Paper-derived weighted calibration, role decisions, complete recommendation, crew resolution and governance; authenticated durable release still pending |
 | `crates/cli` | New demo runs, bounded JSON input, machine-readable verification reports |
 | `specs/protocol-v1.md` | Implemented provisional semantics and exact binary encodings |
 | `specs/next-milestones.md` | Remaining work and baseline fairness constraints |
