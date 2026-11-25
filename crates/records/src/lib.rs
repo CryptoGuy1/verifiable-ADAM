@@ -1,9 +1,13 @@
-//! Authenticated weighted ADAM records. Independent public-disclosure verification;
-//! no proof verification, durable release, worker transport or v1 reinterpretation.
+//! Authenticated weighted ADAM records, independent public verification, a private
+//! weighted-fusion predicate, local reuse/dependencies and durable advisory
+//! authorization. No physical actuation, secure peer transport or v1 reinterpretation.
+pub mod audit;
 pub mod canonical;
 pub mod checker;
+pub mod private;
+pub mod reuse;
 mod seal;
-pub use seal::{Keyring, attest};
+pub use seal::{Keyring, attest, commitment, draft, fresh_nonce, prepare_observations};
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 use veri_adam_decision::{
@@ -14,6 +18,7 @@ use veri_adam_protocol::{decode, identifier, validate_public_key};
 
 pub const COMMITMENT_SCHEME: &str = "ristretto255-pedersen-bulletproofs5/v1";
 pub const QUORUM_RULE: &str = "adam-fixed-eligible-strict-majority/v1";
+pub const PRIVATE_STATEMENT: &str = "weighted-fusion-two-committed-co2/v1";
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]

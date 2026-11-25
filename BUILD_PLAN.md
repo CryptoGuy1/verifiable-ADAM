@@ -8,6 +8,10 @@ This is a new project based on the accepted veri-ADAM proposal and its CO₂ exp
 
 This checklist records concerns to resolve during implementation. Unchecked items are open decisions, not completed capabilities. The structure below is a proposed starting architecture; no previous project code has been copied.
 
+## Connected-agent continuation
+
+The user requested actor integration and explicitly deferred UI work. The [connected runtime contract](specs/weighted-agent-runtime.md) records the delivered actor-owned signing, authenticated temporal support, real weighted private proof, v2 ordinary/dependency checks, restricted export and signed durable advisory-authorization gate. Rules and actual local Qwen runs pass the valid and withholding cases. Historical retrieval is wired but awaits live Weaviate/MiniLM validation; SSH IPs are needed for Pi preparation. Physical acquisition, persistent device identities/secure peer services, full distributed recovery and matched confirmatory evaluation remain open. No novelty or hardware result is claimed.
+
 ## First implementation milestone
 
 **Authenticated v2 contract/checker milestone:** `crates/records` now authenticates the corrected weighted engine's actual evidence, registered weights, full trace/reasoner references, eligible roles, ballots, final action and governance. It includes real hiding commitments and separately held authorized disclosures. The independent checker does not call producer rule functions. New encoding/adversarial tests and both rules/local-Qwen runs are recorded in [the v2 contract](specs/authenticated-decision-v2.md). Legacy signed bytes remain unchanged. This completes the local record/checker step of REQ-02/03/04, not the entire agent integration phase: actual worker/UI migration, authenticated history export, ZKP, runtime dependencies, durable acknowledgment/release and hardware validation remain open. No advisory is released and no proof is claimed.

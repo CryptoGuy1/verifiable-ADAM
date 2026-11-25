@@ -71,7 +71,11 @@ fn check_inner(
     )?;
     require(
         p.quorum_rule == QUORUM_RULE
-            && p.proof_statement == "weighted-fusion-two-committed-co2/v1:reserved-unimplemented",
+            && [
+                "weighted-fusion-two-committed-co2/v1:reserved-unimplemented",
+                PRIVATE_STATEMENT,
+            ]
+            .contains(&p.proof_statement.as_str()),
         "unsupported quorum/proof statement",
     )?;
     let d = d.ok_or("unconfirmed: disclosure required; private proof path is not implemented")?;

@@ -57,6 +57,9 @@ fn salt() -> Result<String, String> {
     OsRng.try_fill_bytes(&mut b).map_err(|e| e.to_string())?;
     Ok(hex::encode(b))
 }
+pub fn fresh_nonce() -> Result<String, String> {
+    salt()
+}
 pub fn commitment(ppm: u32, blinding: &str) -> Result<String, String> {
     if ppm > 40_000 {
         return Err("ppm outside committed domain".into());
@@ -77,25 +80,17 @@ fn fresh_blinding() -> Result<String, String> {
         Scalar::from_bytes_mod_order_wide(&wide).to_bytes(),
     ))
 }
-/// Signs the actual stage transcript; the independent checker still decides validity.
-/// Baselines are included as source-authenticated, explicitly historical support.
-pub fn attest(
+/// Construct evidence using only this source actor's key. Ordinals retain the
+/// original event ordering; the coordinator cannot manufacture source signatures.
+pub fn prepare_observations(
     event: &EventInput,
-    stage: &StageRecord,
     trust: &Trust,
     keys: &Keyring,
-) -> Result<(Record, Disclosure), String> {
+    source_filter: Option<&str>,
+) -> Result<(Vec<Signed<Observation>>, Vec<Opening>), String> {
     trust.validate()?;
     let context = Context::from(event);
     context.validate()?;
-    let fusion = stage
-        .fusion
-        .as_ref()
-        .ok_or("stage has no fusion to attest")?;
-    let selected = stage
-        .selected_recommendation
-        .as_ref()
-        .ok_or("stage has no selected recommendation")?;
     let mut observations = Vec::new();
     let mut openings = Vec::new();
     let inputs = event
@@ -122,6 +117,9 @@ pub fn attest(
             )
         }));
     for (i, (purpose, source_id, sequence, captured_at_ms, data_kind, ppm)) in inputs.enumerate() {
+        if source_filter.is_some_and(|id| id != source_id) {
+            continue;
+        }
         let blinding = fresh_blinding()?;
         let payload = Observation {
             context: context.clone(),
@@ -143,6 +141,27 @@ pub fn attest(
             blinding,
         });
     }
+    Ok((observations, openings))
+}
+/// Assemble an unsigned proposal from evidence already signed before inference.
+pub fn draft(
+    event: &EventInput,
+    stage: &StageRecord,
+    trust: &Trust,
+    observations: &[Signed<Observation>],
+    openings: Vec<Opening>,
+) -> Result<(Proposal, Disclosure), String> {
+    trust.validate()?;
+    let context = Context::from(event);
+    context.validate()?;
+    let fusion = stage
+        .fusion
+        .as_ref()
+        .ok_or("stage has no fusion to attest")?;
+    let selected = stage
+        .selected_recommendation
+        .as_ref()
+        .ok_or("stage has no selected recommendation")?;
     let mut disclosure = Disclosure {
         event: event.clone(),
         stage: stage.clone(),
@@ -201,6 +220,18 @@ pub fn attest(
         deadline_ms: stage.deadline_ms,
         proof_statement: "weighted-fusion-two-committed-co2/v1:reserved-unimplemented".into(),
     };
+    Ok((proposal, disclosure))
+}
+/// Legacy local component helper, preserved; actual workers use prepare/draft and
+/// their own isolated keys rather than asking the coordinator to sign ballots.
+pub fn attest(
+    event: &EventInput,
+    stage: &StageRecord,
+    trust: &Trust,
+    keys: &Keyring,
+) -> Result<(Record, Disclosure), String> {
+    let (observations, openings) = prepare_observations(event, trust, keys, None)?;
+    let (proposal, disclosure) = draft(event, stage, trust, &observations, openings)?;
     let proposal_id = canonical::id("proposal", &proposal);
     let ballots = stage
         .ballots

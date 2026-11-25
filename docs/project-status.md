@@ -2,6 +2,12 @@
 
 **Specification alignment warning:** Existing development milestones are not evidence of compliance with the full agreed specification. Equal-weight fusion, the reduced decision record, the current fusion-equals-final-class rule, absent ZKP, and missing dependency/audit integration are recorded in [the requirements traceability register](../specs/requirements-traceability.md). Follow [AGENTS.md](../AGENTS.md) and explicitly warn before any unapproved deviation, including in demos.
 
+## Latest connected runtime
+
+Per the latest user instruction, actual weighted actors are connected and UI updates are deferred. The new `adam-agent-run` path includes actor-owned signatures, authenticated temporal support, independent B1/B2/B3 checks, a real weighted private fusion proof, restricted auditor exports and signed durable advisory-authorization receipts. Rules and actual local Qwen runs verified four cases, withheld a missing-vote case and stopped tampered source evidence before inference. See [the connected runtime contract](../specs/weighted-agent-runtime.md).
+
+The private checker proves the weighted numerical predicate and authenticates ballots; it explicitly does not privately prove the whole ADAM process. Audit rollback protection requires an independently retained latest checkpoint. Weaviate/MiniLM history is wired but live service validation is pending its image download. Neither Pi .local name resolved; IP addresses were requested. No physical acquisition/deployment or efficiency advantage is claimed. The older demo coverage table below describes the legacy browser only and does not replace this current terminal/JSON status.
+
 ## Working software
 
 - **Corrective ADAM decision stage:** a shared `decision` crate implements inverse-variance calibration, registered weighted fusion/dispersion, temporal Sensor voting, complete recommendations, selection, crew quorum, final assembly, repair/fallback and governance. It is exercised by `adam-run` and `adam-evaluate`; details and source boundaries are in [the decision-stage contract](../specs/adam-decision-stage.md).

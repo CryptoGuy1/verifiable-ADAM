@@ -8,6 +8,15 @@ The present equal-weight rule and simulation are **ADAM-inspired**, not a reprod
 
 The software now includes signed synthetic observations, coordinator-signed decisions, individually signed ballots, a deterministic B1 public verifier, a B2 expiry-aware cache, a B3 reverse dependency index, and a separately implemented reference evaluator. A matched replay runner checks B1, B2, and B3 against declared expected outcomes and the reference. These establish a protocol and development corpus, not research novelty, physical accuracy, or hardware performance.
 
+## Connected weighted agents — no UI update
+
+```sh
+cargo run --locked --offline -- adam-agent-run runs/NEW rules
+cargo run --locked --offline -- adam-agent-run runs/OTHER ollama
+```
+
+This path connects actual inbox-driven workers to the weighted signed pipeline, v2 B1/B2/B3 checks, a real two-reading weighted private proof and a durable advisory-authorization gate. Use `private-export/` for the restricted auditor package; full round/disclosure files contain private readings and model text. See [the runtime contract and remaining gates](specs/weighted-agent-runtime.md), including optional Weaviate/MiniLM history setup. The UI is unchanged at the user’s request. These are synthetic local runs, not deployed Pis, physical actuation or demonstrated novelty.
+
 ## Weighted ADAM decision stage
 
 The corrective `decision` module implements paired-reference inverse-variance calibration, weighted fusion/dispersion, temporal Sensor assessment, the seven-field recommendation, recommendation selection, strict crew quorum, final action alignment and governance. It preserves genuine majority disagreement with the fused result. See [the source mapping and limits](specs/adam-decision-stage.md).
@@ -18,7 +27,7 @@ cargo run --locked --offline -- adam-run runs/adam-stage-new rules
 cargo run --locked --offline -- adam-run runs/adam-stage-qwen-new ollama
 ```
 
-These commands export inspectable unsigned decision-stage records and explicit policies/calibration. They do not release an advisory. The authenticated contract/checker below now wraps this engine; message-driven worker/UI migration, semantic retrieval, durable recording, private proofs and dependency integration remain unfinished. The older browser demo below still uses legacy v1 semantics.
+These commands export inspectable unsigned decision-stage records and explicit policies/calibration. They do not release an advisory. The connected actor path above now wraps this engine, with private fusion proofs, dependencies and durable authorization. Historical semantic-service validation and deployment remain open; UI changes are deferred. The older browser demo below still uses legacy v1 semantics.
 
 ## Authenticated weighted records and independent checking
 
@@ -44,7 +53,7 @@ cargo run --locked --offline -- agent-simulate runs/agents-local ollama
 python3 scripts/run_simulation_viewer.py runs/agents-local/simulation.html --port 8767
 ```
 
-Open **http://127.0.0.1:8767/**. This runs stateful Sensor, Aggregator and Decision actors through message inboxes; the Decision actor calls the installed local `qwen3:1.7b`. The viewer shows individual assessments, dissenting signed ballots, the collective advisory, withholding and expiry. Use a new output directory. The `rules` backend tests the same actors without model inference. See [the agent contract](specs/agent-simulation-v1.md) for signature bindings, real-time deadlines, fault cases and limitations. The coordinator is a nonvoting local state machine; these are local workers, not deployed Pi services. ZKP remains unimplemented.
+Open **http://127.0.0.1:8767/**. This runs stateful Sensor, Aggregator and Decision actors through message inboxes; the Decision actor calls the installed local `qwen3:1.7b`. The viewer shows individual assessments, dissenting signed ballots, the collective advisory, withholding and expiry. Use a new output directory. The `rules` backend tests the same actors without model inference. See [the agent contract](specs/agent-simulation-v1.md) for signature bindings, real-time deadlines, fault cases and limitations. The coordinator is a nonvoting local state machine; these are local workers, not deployed Pi services. This legacy viewer has no ZKP; the new terminal pipeline above implements the weighted private-claim pilot.
 
 ## Run the scripted trajectory simulation
 
@@ -156,6 +165,6 @@ The provisional public rule is an equally weighted mean CO₂ threshold, calcula
 
 Nominal mode requires two matching ballots from three registered logical voters. Explicit degraded mode requires both of two voters. The demo maps three logical voters onto two node labels; it does not demonstrate three physically independent voters or Byzantine fault tolerance.
 
-Alternative support, incremental fusion, B0 original-style reproduction, production key provisioning, persistent anti-replay state, live sensor acquisition, network services, audit-log durability, action release, and B4 private proofs are not implemented. B2 and B3 are currently in-memory libraries used by replay and simulation; separate `verify` invocations remain cold B1 checks. Currentness is checked against the caller's trusted snapshot; there is no atomic live check-and-release mechanism yet. A signed false reading can still pass authentication. The simulator transports pre-signed claim packets, not distributed planner/ballot negotiation.
+For the legacy paths in this section, audit durability, private proofs and the new advisory gate are absent; use the connected weighted pipeline above for those local components. Alternative support, incremental fusion, exact B0 reproduction, production device provisioning, persistent acquisition replay state, live sensors and secure network services remain incomplete. B2 and B3 are currently in-memory libraries used by replay and simulation; separate `verify` invocations remain cold B1 checks. Currentness is checked against the caller's trusted snapshot; there is no atomic live check-and-release mechanism yet. A signed false reading can still pass authentication. The simulator transports pre-signed claim packets, not distributed planner/ballot negotiation.
 
 See [BUILD_PLAN.md](BUILD_PLAN.md) for the larger checklist and [the next milestones](specs/next-milestones.md) for the implementation sequence.

@@ -33,6 +33,8 @@ impl Clock for MonotonicClock {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ReasoningContext {
     pub event_id: String,
+    pub event_started_at_ms: u64,
+    pub history_scope: String,
     pub location_id: String,
     pub policy_hash: String,
     pub primary: Reading,
@@ -536,6 +538,8 @@ impl DecisionEngine {
         r.sensor_assessment = Some(sensor.clone());
         let context = ReasoningContext {
             event_id: event.event_id.clone(),
+            event_started_at_ms: event.started_at_ms,
+            history_scope: event.session_id.clone(),
             location_id: event.location_id.clone(),
             policy_hash: p.id(),
             primary: primary.clone(),

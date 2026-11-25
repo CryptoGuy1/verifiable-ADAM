@@ -11,7 +11,7 @@ class NoRedirect(urllib.request.HTTPRedirectHandler):
         raise ValueError("Local model redirect refused")
 
 
-def main():
+def main(history_enabled=False):
     model = sys.argv[1]
     if sys.argv[2:] == ["--warmup"]:
         # Reuse the existing loader only; its legacy recommendation prompt is never used.
@@ -24,6 +24,13 @@ def main():
     data = json.loads(raw)
     context = data["context"]
     timeout = max(0.001, min(data["remaining_ms"] / 1000, 30))
+    retrieval = None
+    if history_enabled:
+        from history_store import retrieve
+        candidates, retrieval = retrieve(context, data["remaining_ms"])
+        context["prior_resolved_events"] = candidates
+        context["retrieved_event_records"] = [json.loads(r["eventRecordJson"]) for r in retrieval["records"]]
+        context["semantic_retrieval_status"] = "weaviate_resolved_history_retrieved"
     schema = {
         "type": "object", "additionalProperties": False,
         "properties": {
@@ -70,7 +77,8 @@ def main():
         "raw_response": response["message"]["content"],
         "metadata": {"request": request, "request_sha256": hashlib.sha256(encoded).hexdigest(),
                      "done_reason": response.get("done_reason"), "total_duration_ns": response.get("total_duration"),
-                     "eval_count": response.get("eval_count"), "repair": data.get("repair_of") is not None},
+                     "eval_count": response.get("eval_count"), "repair": data.get("repair_of") is not None,
+                     "retrieval": retrieval},
     }
     print(json.dumps(result, separators=(",", ":")))
 

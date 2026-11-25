@@ -868,3 +868,4 @@ pub fn html(run: &Run) -> Result<String, String> {
         .replace('\u{2029}', "\\u2029");
     Ok(include_str!("viewer.html").replace("__SIMULATION_DATA__", &data))
 }
+pub mod weighted;

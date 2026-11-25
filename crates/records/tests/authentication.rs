@@ -150,6 +150,203 @@ fn repack(c: &mut Case) {
     c.disclosure = disclosure;
 }
 
+#[test]
+fn v2_b2_b3_match_independent_outcomes_and_ignore_unrelated_updates() {
+    let c = fixture(900, 500, Classification::Anomaly, false, false, false);
+    let mut b2 = reuse::OrdinaryCache::new(4);
+    let mut b3 = reuse::Dependencies::new(4);
+    b3.update(&c.trust, &c.request.heads, 10000);
+    assert_eq!(
+        b2.check(&c.record, &c.disclosure, &c.trust, &c.request)
+            .outcome,
+        report(&c).outcome
+    );
+    assert_eq!(
+        b3.check(&c.record, &c.disclosure, &c.trust, &c.request)
+            .outcome,
+        report(&c).outcome
+    );
+    let mut q = c.request.clone();
+    q.heads.insert("unrelated-light".into(), "ff".repeat(32));
+    assert!(b3.update(&c.trust, &q.heads, 10001).is_empty());
+    assert_eq!(
+        b2.check(&c.record, &c.disclosure, &c.trust, &q)
+            .signatures_verified,
+        0
+    );
+    assert_eq!(
+        b3.check(&c.record, &c.disclosure, &c.trust, &q)
+            .signatures_verified,
+        0
+    );
+    q.heads.insert("sensor-a".into(), "aa".repeat(32));
+    let affected = b3.update(&c.trust, &q.heads, 10002);
+    assert_eq!(affected.len(), 1);
+    assert_eq!(b3.active_claims(), 0);
+    for (time, current) in [(10002, true), (40000, true), (40000, false)] {
+        q.now_ms = time;
+        q.current = current;
+        let independent = checker::check(&c.record, Some(&c.disclosure), &c.trust, &q);
+        assert_eq!(
+            b2.check(&c.record, &c.disclosure, &c.trust, &q).outcome,
+            independent.outcome
+        );
+        assert_eq!(
+            b3.check(&c.record, &c.disclosure, &c.trust, &q).outcome,
+            independent.outcome
+        );
+    }
+    let mut bad = c.record.clone();
+    bad.ballots[0].signature = "00".repeat(64);
+    assert_eq!(
+        b2.check(&bad, &c.disclosure, &c.trust, &c.request).outcome,
+        "rejected"
+    );
+    assert_eq!(
+        b3.check(&bad, &c.disclosure, &c.trust, &c.request).outcome,
+        "rejected"
+    );
+}
+
+#[test]
+fn v2_dependency_expiry_and_configuration_changes_withdraw_registered_claims() {
+    let c = fixture(900, 500, Classification::Anomaly, false, false, false);
+    let mut b3 = reuse::Dependencies::new(2);
+    b3.update(&c.trust, &c.request.heads, 10000);
+    b3.check(&c.record, &c.disclosure, &c.trust, &c.request);
+    assert_eq!(b3.update(&c.trust, &c.request.heads, 40000).len(), 1);
+    b3.check(&c.record, &c.disclosure, &c.trust, &c.request);
+    let mut t = c.trust.clone();
+    t.policy.version += 1;
+    assert_eq!(b3.update(&t, &c.request.heads, 10001).len(), 1);
+    assert_eq!(
+        b3.check(&c.record, &c.disclosure, &t, &c.request).outcome,
+        "rejected"
+    );
+}
+
+fn scratch(name: &str) -> std::path::PathBuf {
+    std::env::temp_dir().join(format!(
+        "adam-{name}-{}-{}",
+        std::process::id(),
+        std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap()
+            .as_nanos()
+    ))
+}
+#[test]
+fn audit_acknowledgment_precedes_at_most_once_release_and_survives_reopen() {
+    let c = fixture(900, 500, Classification::Anomaly, false, false, false);
+    let path = scratch("audit");
+    let mut journal = audit::Journal::open(&path, &c.trust, &c.keys, None).unwrap();
+    journal
+        .append(audit::Event {
+            kind: audit::Kind::Attempt,
+            context: c.request.context.clone(),
+            proposal_id: Some(canonical::id("proposal", &c.record.proposal.payload)),
+            outcome: "verified_current_awaiting_recording".into(),
+            at_ms: 10000,
+        })
+        .unwrap();
+    let release = journal
+        .authorize(&c.record, &c.disclosure, &c.request, &FixedClock(10001))
+        .unwrap();
+    assert_eq!(release.payload.checkpoint.payload.sequence, 2);
+    assert!(
+        journal
+            .authorize(&c.record, &c.disclosure, &c.request, &FixedClock(10002))
+            .is_err()
+    );
+    let pin = journal.checkpoint.clone();
+    drop(journal);
+    audit::verify(&path, &c.trust, Some(&pin)).unwrap();
+    audit::verify_release(&release, &c.record, &c.trust, &path, Some(&pin)).unwrap();
+    let mut journal = audit::Journal::open(&path, &c.trust, &c.keys, Some(&pin)).unwrap();
+    assert!(
+        journal
+            .authorize(&c.record, &c.disclosure, &c.request, &FixedClock(10003))
+            .is_err()
+    );
+    drop(journal);
+    std::fs::remove_dir_all(path).unwrap();
+}
+#[test]
+fn audit_detects_corruption_truncation_and_rollback_relative_to_external_pin() {
+    let c = fixture(900, 500, Classification::Anomaly, false, false, false);
+    let path = scratch("audit-attacks");
+    let mut journal = audit::Journal::open(&path, &c.trust, &c.keys, None).unwrap();
+    let old = journal.checkpoint.clone();
+    journal
+        .authorize(&c.record, &c.disclosure, &c.request, &FixedClock(10001))
+        .unwrap();
+    let latest = journal.checkpoint.clone();
+    drop(journal);
+    let original = std::fs::read(path.join("events.jsonl")).unwrap();
+    std::fs::write(path.join("events.jsonl"), b"").unwrap();
+    assert!(audit::verify(&path, &c.trust, None).is_err());
+    std::fs::write(
+        path.join("checkpoint.json"),
+        serde_json::to_vec(&old).unwrap(),
+    )
+    .unwrap();
+    assert!(audit::verify(&path, &c.trust, Some(&latest)).is_err());
+    assert!(audit::verify(&path, &c.trust, None).is_ok()); // Whole-state rollback requires an external pin.
+    std::fs::write(path.join("events.jsonl"), original).unwrap();
+    std::fs::write(
+        path.join("checkpoint.json"),
+        serde_json::to_vec(&latest).unwrap(),
+    )
+    .unwrap();
+    let mut entry: serde_json::Value =
+        serde_json::from_slice(&std::fs::read(path.join("events.jsonl")).unwrap()).unwrap();
+    entry["payload"]["event"]["outcome"] = "forged".into();
+    std::fs::write(path.join("events.jsonl"), format!("{}\n", entry)).unwrap();
+    assert!(audit::verify(&path, &c.trust, Some(&latest)).is_err());
+    std::fs::remove_dir_all(path).unwrap();
+}
+#[test]
+fn late_recording_withholds_release_and_complete_signed_crash_tail_recovers_safely() {
+    let c = fixture(900, 500, Classification::Anomaly, false, false, false);
+    let path = scratch("audit-crash");
+    let mut journal = audit::Journal::open(&path, &c.trust, &c.keys, None).unwrap();
+    let before = journal.checkpoint.clone();
+    struct LateAck(std::cell::Cell<bool>);
+    impl Clock for LateAck {
+        fn now_ms(&self) -> u64 {
+            if self.0.replace(true) { 40000 } else { 10001 }
+        }
+    }
+    assert!(
+        journal
+            .authorize(
+                &c.record,
+                &c.disclosure,
+                &c.request,
+                &LateAck(std::cell::Cell::new(false))
+            )
+            .is_err()
+    );
+    assert_eq!(journal.checkpoint.payload.sequence, 1); // Durable reservation, no release.
+    drop(journal);
+    // Simulate power loss after the signed entry fsync but before checkpoint replacement.
+    std::fs::write(
+        path.join("checkpoint.json"),
+        serde_json::to_vec(&before).unwrap(),
+    )
+    .unwrap();
+    assert!(audit::Journal::open(&path, &c.trust, &c.keys, Some(&before)).is_err());
+    audit::Journal::recover(&path, &c.trust, &c.keys, Some(&before)).unwrap();
+    let mut journal = audit::Journal::open(&path, &c.trust, &c.keys, Some(&before)).unwrap();
+    assert!(
+        journal
+            .authorize(&c.record, &c.disclosure, &c.request, &FixedClock(10002))
+            .is_err()
+    );
+    drop(journal);
+    std::fs::remove_dir_all(path).unwrap();
+}
+
 fn reevaluate(c: &mut Case, reasoner: &mut dyn Reasoner) {
     c.disclosure.stage = DecisionEngine::new()
         .evaluate(

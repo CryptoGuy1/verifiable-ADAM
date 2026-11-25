@@ -1,5 +1,7 @@
 # Authenticated weighted ADAM record, version 2
 
+This document records the original local contract milestone. Its later [connected-runtime extension](weighted-agent-runtime.md) adds actual actor-owned signing, the real weighted private-claim pilot, v2 dependencies and durable authorization; earlier reserved-statement records remain unchanged.
+
 Implemented 25 November 2026 for REQ-02/03/04, with commitment groundwork for REQ-06. Sources: client CO2 refinement §6–10 (signed evidence, complete bundles, independent checking); original ADAM §3.2.3–3.5 (weighted fusion, role assessment, eligible quorum, recommendation selection, governance); explicit user choices in the traceability register. This is the next contract/checker component of the integrated-local plan, not completion of worker/UI migration or the entire research system.
 
 ## What runs

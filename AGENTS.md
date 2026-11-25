@@ -29,12 +29,12 @@ When an existing mismatch is discovered, report it and record it as noncompliant
 - Restore the paper-derived weighted ADAM pipeline first, using synthetic reference/calibration fixtures until appropriate physical calibration data exists. Do not silently use equal weights or transfer methane calibration weights to CO2.
 - Keep fused classification, reasoner recommendation and crew-resolved classification distinct. An authentic majority disagreeing with fusion is not automatically a forged quorum. Implement the specified governance checks.
 - Keep role-attributed assessments, eligible-set quorum, action proposals, policy outcomes and failure/deadline behaviour. Do not replace the complete decision record with a boolean-only final contract.
-- The user selected a private proof of the weighted fused classification from both hidden readings, with authorized internal access and a restricted external-auditor view. This is planned, not implemented. Do not substitute a signature, hash, hidden UI field or single-reading proof for it.
+- The user selected a private proof of the weighted fused classification from both hidden readings, with authorized internal access and a restricted external-auditor view. A real local weighted-fusion proof pilot now exists; complete private-process assurance and Pi feasibility are not established. Do not substitute a signature, hash, hidden UI field or single-reading proof for it.
 - Integrate evidence dependencies and independent validity checks with actual agent decisions. Do not claim integration merely because a separate B3 library exists.
 - Compare with a competent equivalent ordinary indexed cache under matched inputs and assurance. Report equivalence or a negative result honestly; novelty and efficiency are not assumed.
 - Current procurement is two breadboards, one SCD40 and one BH1750, with cooling packs removed. Additional channels use labeled datasets. Do not add purchases or describe replay channels as independent live sensors.
 - Two Pis do not establish three independent physical voters. Public test keys are not device secrets; recorded or synthetic data is not physical validation.
-- ZKP and durable tamper-evident audit/governance are incomplete. Blockchain anchoring is optional and not part of the current implementation milestone.
+- The local weighted private proof, signed audit journal and advisory-authorization gate now exist; protected device provisioning, distributed recovery, independent rollback pins and physical validation remain incomplete. Blockchain anchoring is optional.
 
 ## Milestone completion gate
 

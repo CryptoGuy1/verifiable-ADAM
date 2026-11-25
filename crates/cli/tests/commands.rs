@@ -13,6 +13,96 @@ fn cli(args: &[&str]) -> Output {
 }
 
 #[test]
+fn connected_agents_private_claim_and_durable_authorization_are_real_and_ui_is_absent() {
+    let root = std::env::temp_dir().join(format!(
+        "adam-connected-{}-{}",
+        std::process::id(),
+        SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap()
+            .as_nanos()
+    ));
+    let _guard = Scratch(root.clone());
+    let path = root.to_str().unwrap();
+    let output = cli(&["adam-agent-run", path, "rules"]);
+    assert!(
+        output.status.success(),
+        "{}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+    let rounds: serde_json::Value =
+        serde_json::from_slice(&fs::read(root.join("agent-run.json")).unwrap()).unwrap();
+    assert_eq!(rounds.as_array().unwrap().len(), 6);
+    for round in &rounds.as_array().unwrap()[..4] {
+        assert_eq!(
+            round["verification"]["outcome"],
+            "verified_current_awaiting_recording"
+        );
+        assert_eq!(
+            round["private_verification"]["private_fusion_verified"],
+            true
+        );
+        assert_eq!(
+            round["private_verification"]["full_decision_processing_verified"],
+            false
+        );
+        assert_eq!(
+            round["ordinary_verification"]["outcome"],
+            round["verification"]["outcome"]
+        );
+        assert_eq!(
+            round["dependency_verification"]["outcome"],
+            round["verification"]["outcome"]
+        );
+    }
+    assert_eq!(rounds[4]["verification"]["outcome"], "unconfirmed");
+    assert!(rounds[5]["record"].is_null());
+    assert!(
+        root.join("weighted-anomaly/advisory-authorization.json")
+            .exists()
+    );
+    assert!(
+        !root
+            .join("missing-ballot/advisory-authorization.json")
+            .exists()
+    );
+    assert!(!root.join("simulation.html").exists());
+    let public =
+        fs::read_to_string(root.join("private-export/weighted-normal/record.json")).unwrap();
+    assert!(
+        !public.contains("co2_ppm")
+            && !public.contains("raw_response")
+            && !public.contains("blinding")
+    );
+    assert!(
+        !root
+            .join("private-export/weighted-normal/authorized-disclosure.json")
+            .exists()
+    );
+    let out = cli(&[
+        "adam-private-check",
+        root.join("weighted-normal/record.json").to_str().unwrap(),
+        root.join("weighted-normal/private-proof.json")
+            .to_str()
+            .unwrap(),
+        root.join("trust.json").to_str().unwrap(),
+        root.join("weighted-normal/request.json").to_str().unwrap(),
+    ]);
+    assert!(
+        out.status.success(),
+        "{}",
+        String::from_utf8_lossy(&out.stdout)
+    );
+    let out = cli(&[
+        "adam-audit-check",
+        root.join("audit").to_str().unwrap(),
+        root.join("trust.json").to_str().unwrap(),
+        root.join("latest-checkpoint.json").to_str().unwrap(),
+    ]);
+    assert!(out.status.success());
+}
+
+#[test]
 fn authenticated_weighted_run_is_independently_checkable_and_never_claims_release() {
     let root = std::env::temp_dir().join(format!(
         "adam-auth-{}-{}",
