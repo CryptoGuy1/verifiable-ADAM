@@ -18,7 +18,24 @@ cargo run --locked --offline -- adam-run runs/adam-stage-new rules
 cargo run --locked --offline -- adam-run runs/adam-stage-qwen-new ollama
 ```
 
-These commands export inspectable decision-stage records and explicit policies/calibration. They do not release an advisory: versioned signed-record/agent integration, semantic retrieval, durable recording, private proofs and dependency integration remain unfinished. The older browser demo below still uses legacy v1 semantics; it has not been silently changed or presented as the corrected workflow.
+These commands export inspectable unsigned decision-stage records and explicit policies/calibration. They do not release an advisory. The authenticated contract/checker below now wraps this engine; message-driven worker/UI migration, semantic retrieval, durable recording, private proofs and dependency integration remain unfinished. The older browser demo below still uses legacy v1 semantics.
+
+## Authenticated weighted records and independent checking
+
+```sh
+cargo run --locked --offline -- adam-auth-run runs/adam-authenticated-new rules
+# Uses the same weighted engine with the installed local Qwen model:
+cargo run --locked --offline -- adam-auth-run runs/adam-authenticated-qwen-new ollama
+cargo run --locked --offline -- adam-check \
+  runs/adam-authenticated-new/weighted-normal/record.json \
+  runs/adam-authenticated-new/weighted-normal/authorized-disclosure.json \
+  runs/adam-authenticated-new/trust.json \
+  runs/adam-authenticated-new/weighted-normal/request.json
+```
+
+Version 2 binds committed source observations, registered weights, complete decision/reasoner references, eligible roles, signed ballots, proposed action and governance. A separate checker recomputes the weighted/temporal rules, actual quorum and policy. The runner uses fresh ephemeral OS-random keys and synthetic evidence; these are local components, not deployed agents or device provisioning. Source mapping, canonical encoding, acceptance cases and limits are in [the authenticated record contract](specs/authenticated-decision-v2.md).
+
+Successful processing still says **awaiting recording**, with no action release. Real hiding commitments prepare the selected privacy path, but **ZKP is not implemented**: `adam-check RECORD - TRUST REQUEST` returns unconfirmed. `authorized-disclosure.json` contains readings, openings and private model text; do not send it to an external private verifier. Legacy v1 signed bytes and examples remain unchanged.
 
 ## Run the agent simulation with local Qwen
 

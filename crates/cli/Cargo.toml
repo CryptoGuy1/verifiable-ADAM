@@ -16,5 +16,6 @@ veri-adam-replay.workspace = true
 veri-adam-simulation.workspace = true
 veri-adam-agents.workspace = true
 veri-adam-decision.workspace = true
+veri-adam-records.workspace = true
 serde.workspace = true
 serde_json.workspace = true

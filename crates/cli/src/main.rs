@@ -8,6 +8,7 @@ use std::{
 };
 use veri_adam_protocol::*;
 mod adam;
+mod authenticated;
 
 fn read<T: DeserializeOwned>(path: &str) -> Result<T, String> {
     let f = File::open(path).map_err(|e| format!("{path}: {e}"))?;
@@ -123,6 +124,10 @@ fn simulate(config: veri_adam_simulation::Config, output: &str) -> Result<bool, 
 }
 fn run(args: &[String]) -> Result<bool, String> {
     match args {
+        [cmd, output, mode] if cmd == "adam-auth-run" => authenticated::run(output, mode),
+        [cmd, record, disclosure, trust, request] if cmd == "adam-check" => {
+            authenticated::check(record, disclosure, trust, request)
+        }
         [cmd, input, output] if cmd == "adam-calibrate" => adam::calibrate_file(input, output),
         [cmd, event, policy, profile] if cmd == "adam-evaluate" => {
             adam::evaluate_file(event, policy, profile)
@@ -278,7 +283,7 @@ fn run(args: &[String]) -> Result<bool, String> {
 }
 fn help() {
     println!(
-        "veri-adam: experimental signed-event verifier\n\n  demo NEW_DIRECTORY\n  verify BUNDLE POLICY REGISTRY REQUEST\n  replay-demo NEW_DIRECTORY\n  dependency-demo NEW_DIRECTORY\n  replay WORKLOAD [NEW_DIRECTORY]\n  simulate NEW_DIRECTORY [SCENARIO [SEED]]\n  simulate-config CONFIG NEW_DIRECTORY\n  agent-simulate NEW_DIRECTORY ollama|rules\n  adam-run NEW_DIRECTORY rules|ollama\n  adam-calibrate CALIBRATION_INPUT NEW_DIRECTORY\n  adam-evaluate EVENT POLICY CALIBRATION_PROFILE\n\nScenarios: stable, dropout, partition, delay, tamper, replay, false-reading, mixed.\nPolicy, registry and request are trusted verifier inputs, separate from the bundle.\nReplay workloads contain trusted snapshots and expected outcomes; use trusted files.\nExit: 0 command success or decision-stage policy approval (not action release); 1 withheld/mismatch; 2 input/operational error.\nLegacy simulations use provisional v1 semantics. adam-run evaluates the weighted decision stage only; approval awaits authenticated durable recording. No live sensors, actuation, production keys or ZKP."
+        "veri-adam: experimental signed-event verifier\n\n  demo NEW_DIRECTORY\n  verify BUNDLE POLICY REGISTRY REQUEST\n  replay-demo NEW_DIRECTORY\n  dependency-demo NEW_DIRECTORY\n  replay WORKLOAD [NEW_DIRECTORY]\n  simulate NEW_DIRECTORY [SCENARIO [SEED]]\n  simulate-config CONFIG NEW_DIRECTORY\n  agent-simulate NEW_DIRECTORY ollama|rules\n  adam-run NEW_DIRECTORY rules|ollama\n  adam-auth-run NEW_DIRECTORY rules|ollama\n  adam-check RECORD DISCLOSURE_OR_DASH TRUST REQUEST\n  adam-calibrate CALIBRATION_INPUT NEW_DIRECTORY\n  adam-evaluate EVENT POLICY CALIBRATION_PROFILE\n\nScenarios: stable, dropout, partition, delay, tamper, replay, false-reading, mixed.\nPolicy, registry and request are trusted verifier inputs, separate from the bundle.\nReplay workloads contain trusted snapshots and expected outcomes; use trusted files.\nExit: 0 command success or decision-stage policy approval (not action release); 1 withheld/mismatch; 2 input/operational error.\nLegacy simulations use provisional v1 semantics. adam-run evaluates the weighted decision stage only; approval awaits authenticated durable recording. adam-auth-run adds v2 signatures and an independent weighted checker; its local keys are ephemeral. adam-check requires separately trusted configuration/challenge; a dash withholds disclosure and returns unconfirmed. No live sensors, actuation, production provisioning or ZKP."
     );
 }
 fn main() -> ExitCode {

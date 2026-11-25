@@ -4,7 +4,8 @@
 
 ## Working software
 
-- **Corrective ADAM decision stage:** a shared `decision` crate implements inverse-variance calibration, registered weighted fusion/dispersion, temporal Sensor voting, complete recommendations, selection, crew quorum, final assembly, repair/fallback and governance. It is exercised by `adam-run` and `adam-evaluate`; details and source boundaries are in [the decision-stage contract](../specs/adam-decision-stage.md). This component does not authenticate a new v2 event or release an action, and the legacy browser/worker runtime is not migrated yet.
+- **Corrective ADAM decision stage:** a shared `decision` crate implements inverse-variance calibration, registered weighted fusion/dispersion, temporal Sensor voting, complete recommendations, selection, crew quorum, final assembly, repair/fallback and governance. It is exercised by `adam-run` and `adam-evaluate`; details and source boundaries are in [the decision-stage contract](../specs/adam-decision-stage.md).
+- **Authenticated weighted v2 records:** `records` and `adam-auth-run` sign actual weighted-stage outputs, role ballots and hiding source commitments using fresh ephemeral OS-random keys. `adam-check` independently checks full disclosed evidence, numerical/role/quorum rules, reasoner provenance and governance against separate trust/challenge inputs. Rules and real local Qwen runs each verified four cases and withheld the split missing-ballot case. See [the v2 contract](../specs/authenticated-decision-v2.md). This does not migrate the existing worker/browser runtime, implement ZKP, provision devices, persist anti-replay state or authorize release; all successful reports still await durable recording.
 
 - Typed event records, explicit canonical signing format, and real Ed25519 verification.
 - Signed measurements, coordinator proposals, and individual logical ballots.

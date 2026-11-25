@@ -2,7 +2,7 @@
 
 ## Current delivery
 
-The corrective [ADAM decision stage](adam-decision-stage.md) now implements weighted numerical/role/governance logic with complete recommendations and explicit configuration. It is a shared component, not a new signed wire protocol. The next integration task must define the versioned authenticated contract before migrating agent workers, reference checking and UI; preserve the distinction between fused, recommended and crew-resolved classes. Do not substitute this unsigned stage for completed authenticated verification, ZKP, dependency integration or durable audit.
+The corrective [ADAM decision stage](adam-decision-stage.md) implements weighted numerical/role/governance logic with complete recommendations and explicit configuration. The new [authenticated v2 contract and independent checker](authenticated-decision-v2.md) now wrap actual stage outputs with committed signed observations, role ballots, registered weights, reasoner/trace references, final action and governance. Both rules and local Qwen runs are independently checked. These are local contract/checker components: the next integration task is migrating the message-driven agent workers and UI, including explicit authenticated history export. Preserve the distinction between fused, recommended and crew-resolved classes. ZKP, runtime dependency integration and durable audit/release remain incomplete.
 
 The workspace implements B1 public verification, B2 ordinary caching, the B3 reverse dependency index prototype, independent reference outcomes, a matched replay runner, exact signature encoding, and adversarial tests. The frozen 31-check baseline and 27-check multi-claim workload are documented in [the B2 contract](b2-cache.md) and [the B3 contract](b3-dependencies.md). It is ready for review and further implementation, not for claims of a completed two-Pi experiment. Procurement, power/cooling validation, sensor calibration, and Pi deployment remain open.
 
@@ -32,6 +32,6 @@ The initial format binds measurements to a decision event. Decide how a later lo
 
 ## Optional proof and confirmatory evaluation
 
-Define a real confidentiality requirement and hiding commitment before choosing a proof system. B4 must bind the private bounded threshold witness to an authenticated event, and enforce freshness separately. Public-reading records in this first milestone are not private proof inputs.
+The user selected private weighted fusion from both readings. Version 2 now signs real Ristretto Pedersen commitments and separates authorized openings/private traces from the public record; v1 public-reading hashes are not private proof inputs. Implement and independently test the actual weighted bounded predicate, binding it to the new signed context and registered weights, with freshness checked separately. The reserved statement is not an implemented B4 proof, and the present no-disclosure path withholds verification.
 
 After pilot measurements, preregister primary metrics, practical-effect thresholds, sample sizes, deadline budgets, and uncertainty analysis. Freeze held-out workloads before the confirmatory campaign. No efficiency, accuracy, energy, or ZKP feasibility claim follows from the software tests alone.

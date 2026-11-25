@@ -13,6 +13,76 @@ fn cli(args: &[&str]) -> Output {
 }
 
 #[test]
+fn authenticated_weighted_run_is_independently_checkable_and_never_claims_release() {
+    let root = std::env::temp_dir().join(format!(
+        "adam-auth-{}-{}",
+        std::process::id(),
+        SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap()
+            .as_nanos()
+    ));
+    let _guard = Scratch(root.clone());
+    let path = root.to_str().unwrap();
+    assert_eq!(
+        cli(&["adam-auth-run", path, "invalid"]).status.code(),
+        Some(2)
+    );
+    assert!(!root.exists());
+    let out = cli(&["adam-auth-run", path, "rules"]);
+    assert!(
+        out.status.success(),
+        "{}",
+        String::from_utf8_lossy(&out.stderr)
+    );
+    let manifest: serde_json::Value =
+        serde_json::from_slice(&fs::read(root.join("manifest.json")).unwrap()).unwrap();
+    for i in 0..4 {
+        assert_eq!(
+            manifest["cases"][i]["independent_verification"]["outcome"],
+            "verified_current_awaiting_recording"
+        );
+    }
+    assert_eq!(
+        manifest["cases"][4]["independent_verification"]["outcome"],
+        "unconfirmed"
+    );
+    assert_eq!(manifest["action_released"], false);
+    let record = root.join("weighted-normal/record.json");
+    let disclosure = root.join("weighted-normal/authorized-disclosure.json");
+    let request = root.join("weighted-normal/request.json");
+    let trust = root.join("trust.json");
+    let out = cli(&[
+        "adam-check",
+        record.to_str().unwrap(),
+        disclosure.to_str().unwrap(),
+        trust.to_str().unwrap(),
+        request.to_str().unwrap(),
+    ]);
+    assert!(
+        out.status.success(),
+        "{}",
+        String::from_utf8_lossy(&out.stdout)
+    );
+    let out = cli(&[
+        "adam-check",
+        record.to_str().unwrap(),
+        "-",
+        trust.to_str().unwrap(),
+        request.to_str().unwrap(),
+    ]);
+    assert_eq!(out.status.code(), Some(1));
+    let report: serde_json::Value = serde_json::from_slice(&out.stdout).unwrap();
+    assert_eq!(report["private_proof_verified"], false);
+    let original = fs::read(&record).unwrap();
+    assert_eq!(
+        cli(&["adam-auth-run", path, "ollama"]).status.code(),
+        Some(2)
+    );
+    assert_eq!(original, fs::read(record).unwrap());
+}
+
+#[test]
 fn weighted_decision_stage_uses_calibration_and_does_not_claim_authenticated_release() {
     let root = std::env::temp_dir().join(format!(
         "adam-stage-{}-{}",
