@@ -72,6 +72,27 @@ pub fn release_check(
     );
     Ok(true)
 }
+pub fn history_check(registry: &str, before: &str) -> Result<bool, String> {
+    use std::io::Read;
+    let before = before
+        .parse::<u64>()
+        .map_err(|_| "invalid historical cutoff")?;
+    let mut data = Vec::new();
+    std::io::stdin()
+        .take(veri_adam_protocol::MAX_FILE_BYTES + 1)
+        .read_to_end(&mut data)
+        .map_err(|e| e.to_string())?;
+    if data.len() as u64 > veri_adam_protocol::MAX_FILE_BYTES {
+        return Err("history evidence exceeds 1 MiB".into());
+    }
+    let stored: history::StoredEvent = serde_json::from_slice(&data).map_err(|e| e.to_string())?;
+    let view = history::verify(&stored, registry, before)?;
+    println!(
+        "{}",
+        serde_json::to_string(&view).map_err(|e| e.to_string())?
+    );
+    Ok(true)
+}
 pub fn run(output: &str, mode: &str) -> Result<bool, String> {
     if !["rules", "ollama"].contains(&mode) {
         return Err("mode must be rules or ollama".into());
@@ -232,6 +253,11 @@ pub fn agent_run(output: &str, mode: &str) -> Result<bool, String> {
     let export = dir.join("private-export");
     std::fs::create_dir(&export).map_err(|e| e.to_string())?;
     write(&export, "trust.json", &trust)?;
+    write(
+        &export,
+        "manifest.json",
+        &serde_json::json!({"kind":"private-claim-development-package","data_kind":"synthetic","pi_deployment":false,"full_decision_processing_proved":false,"currentness":"saved requests are development replay inputs; a live verifier must supply its own trusted time, challenge and heads","trust":"registry/policy and latest checkpoint must be independently trusted; the copied checkpoint alone is not an independent rollback pin"}),
+    )?;
     write(dir, "calibration-input.json", &calibration_input)?;
     if mode == "ollama-history" {
         write(
@@ -324,6 +350,44 @@ pub fn agent_run(output: &str, mode: &str) -> Result<bool, String> {
         );
         let case = dir.join(name);
         std::fs::create_dir(&case).map_err(|e| e.to_string())?;
+        let now = round
+            .event
+            .started_at_ms
+            .saturating_add(processing.elapsed().as_millis() as u64);
+        for invalidation in &round.invalidations {
+            journal.append(audit::Event {
+                kind: audit::Kind::DependencyInvalidation,
+                context: Context::from(&round.event),
+                proposal_id: Some(invalidation.claim_id.clone()),
+                outcome: "support_changed_or_expired".into(),
+                at_ms: now,
+            })?;
+        }
+        let previous = journal.checkpoint.payload.tip.clone();
+        let attempt = audit::Event {
+            kind: audit::Kind::Attempt,
+            context: Context::from(&round.event),
+            proposal_id: round
+                .record
+                .as_ref()
+                .map(|r| canonical::id("proposal", &r.proposal.payload)),
+            outcome: round
+                .verification
+                .as_ref()
+                .map(|r| r.outcome.clone())
+                .unwrap_or_else(|| "withheld_before_decision".into()),
+            at_ms: now,
+        };
+        let checkpoint = journal.append(attempt.clone())?;
+        write(&case, "recording-ack.json", &checkpoint)?;
+        let resolution = history::Resolution {
+            entry: audit::Entry {
+                sequence: checkpoint.payload.sequence,
+                previous,
+                event: attempt,
+            },
+            checkpoint,
+        };
         let mut required_history_ack = mode != "ollama-history";
         if mode == "ollama-history"
             && round
@@ -333,7 +397,13 @@ pub fn agent_run(output: &str, mode: &str) -> Result<bool, String> {
             && let (Some(record), Some(disclosure)) = (&round.record, &round.disclosure)
         {
             let elapsed = processing.elapsed().as_millis() as u64;
-            let payload = serde_json::json!({"record":record,"disclosure":disclosure,"resolved_at_ms":round.event.started_at_ms+elapsed,"remaining_ms":trust.policy.event_budget_ms.saturating_sub(elapsed)});
+            let verification = history::StoredEvent {
+                record: record.clone(),
+                disclosure: disclosure.clone(),
+                trust: trust.clone(),
+                resolution: resolution.clone(),
+            };
+            let payload = serde_json::json!({"verification":verification,"remaining_ms":trust.policy.event_budget_ms.saturating_sub(elapsed)});
             match history_call(
                 "record",
                 Some(payload),
@@ -351,35 +421,19 @@ pub fn agent_run(output: &str, mode: &str) -> Result<bool, String> {
                     )?;
                 }
             }
+            if !required_history_ack {
+                journal.append(audit::Event {
+                    kind: audit::Kind::RecordingFailure,
+                    context: Context::from(&round.event),
+                    proposal_id: Some(canonical::id("proposal", &record.proposal.payload)),
+                    outcome: "required_history_store_acknowledgment_missing".into(),
+                    at_ms: round
+                        .event
+                        .started_at_ms
+                        .saturating_add(processing.elapsed().as_millis() as u64),
+                })?;
+            }
         }
-        let now = round
-            .event
-            .started_at_ms
-            .saturating_add(processing.elapsed().as_millis() as u64);
-        for invalidation in &round.invalidations {
-            journal.append(audit::Event {
-                kind: audit::Kind::DependencyInvalidation,
-                context: Context::from(&round.event),
-                proposal_id: Some(invalidation.claim_id.clone()),
-                outcome: "support_changed_or_expired".into(),
-                at_ms: now,
-            })?;
-        }
-        let checkpoint = journal.append(audit::Event {
-            kind: audit::Kind::Attempt,
-            context: Context::from(&round.event),
-            proposal_id: round
-                .record
-                .as_ref()
-                .map(|r| canonical::id("proposal", &r.proposal.payload)),
-            outcome: round
-                .verification
-                .as_ref()
-                .map(|r| r.outcome.clone())
-                .unwrap_or_else(|| "withheld_before_decision".into()),
-            at_ms: now,
-        })?;
-        write(&case, "recording-ack.json", &checkpoint)?;
         if required_history_ack
             && round
                 .private_verification
@@ -400,6 +454,17 @@ pub fn agent_run(output: &str, mode: &str) -> Result<bool, String> {
                     println!("{name}: advisory authorization durably recorded");
                 }
                 Err(error) => {
+                    journal.append(audit::Event {
+                        kind: audit::Kind::ReleaseWithheld,
+                        context: Context::from(&round.event),
+                        proposal_id: Some(canonical::id("proposal", &record.proposal.payload)),
+                        outcome: "currentness_quorum_deadline_or_duplicate_release_gate_refused"
+                            .into(),
+                        at_ms: round
+                            .event
+                            .started_at_ms
+                            .saturating_add(processing.elapsed().as_millis() as u64),
+                    })?;
                     write(
                         &case,
                         "release-withheld.json",
@@ -482,6 +547,10 @@ fn history_call(
         return Err("no history-service budget remains".into());
     }
     let mut child = Command::new("python3")
+        .env(
+            "VERI_ADAM_VERIFIER",
+            std::env::current_exe().map_err(|e| e.to_string())?,
+        )
         .arg(Path::new(env!("CARGO_MANIFEST_DIR")).join("../../scripts/history_store.py"))
         .arg(operation)
         .stdin(Stdio::piped())

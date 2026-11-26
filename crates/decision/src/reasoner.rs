@@ -79,6 +79,10 @@ impl Reasoner for OllamaReasoner {
             return Err("no inference budget remains".into());
         }
         let mut child = Command::new("python3")
+            .env(
+                "VERI_ADAM_VERIFIER",
+                std::env::current_exe().map_err(|e| e.to_string())?,
+            )
             .arg(&self.adapter)
             .arg(&self.model)
             .stdin(Stdio::piped())

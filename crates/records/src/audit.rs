@@ -15,6 +15,8 @@ pub enum Kind {
     Attempt,
     ReleaseReservation,
     DependencyInvalidation,
+    RecordingFailure,
+    ReleaseWithheld,
 }
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]

@@ -4,6 +4,7 @@
 pub mod audit;
 pub mod canonical;
 pub mod checker;
+pub mod history;
 pub mod private;
 pub mod reuse;
 mod seal;

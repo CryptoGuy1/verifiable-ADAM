@@ -10,7 +10,7 @@ This checklist records concerns to resolve during implementation. Unchecked item
 
 ## Connected-agent continuation
 
-The user requested actor integration and explicitly deferred UI work. The [connected runtime contract](specs/weighted-agent-runtime.md) records the delivered actor-owned signing, authenticated temporal support, real weighted private proof, v2 ordinary/dependency checks, restricted export and signed durable advisory-authorization gate. Rules and actual local Qwen runs pass the valid and withholding cases. Historical retrieval is wired but awaits live Weaviate/MiniLM validation; SSH IPs are needed for Pi preparation. Physical acquisition, persistent device identities/secure peer services, full distributed recovery and matched confirmatory evaluation remain open. No novelty or hardware result is claimed.
+The user requested actor integration and explicitly deferred UI work. The [connected runtime contract](specs/weighted-agent-runtime.md) records the delivered actor-owned signing, authenticated temporal support, real weighted private proof, v2 ordinary/dependency checks, restricted export and signed durable advisory-authorization gate. Rules and actual local Qwen runs pass the valid and withholding cases. Historical retrieval now passes live Weaviate/MiniLM validation, including independently verified signed historical evidence, 0–4 prior records in actual Qwen context and required-store failure withholding; SSH IPs are needed for Pi preparation. Physical acquisition, persistent device identities/secure peer services, full distributed recovery and matched confirmatory evaluation remain open. No novelty or hardware result is claimed.
 
 ## First implementation milestone
 

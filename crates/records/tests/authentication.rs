@@ -271,6 +271,56 @@ fn audit_acknowledgment_precedes_at_most_once_release_and_survives_reopen() {
     drop(journal);
     std::fs::remove_dir_all(path).unwrap();
 }
+
+#[test]
+fn historical_context_requires_pinned_keys_valid_processing_and_prior_durable_resolution() {
+    let c = fixture(900, 500, Classification::Anomaly, false, false, false);
+    let path = scratch("history-authentication");
+    let mut journal = audit::Journal::open(&path, &c.trust, &c.keys, None).unwrap();
+    let previous = journal.checkpoint.payload.tip.clone();
+    let event = audit::Event {
+        kind: audit::Kind::Attempt,
+        context: c.request.context.clone(),
+        proposal_id: Some(canonical::id("proposal", &c.record.proposal.payload)),
+        outcome: "verified_current_awaiting_recording".into(),
+        at_ms: 10001,
+    };
+    let checkpoint = journal.append(event.clone()).unwrap();
+    let stored = history::StoredEvent {
+        record: c.record.clone(),
+        disclosure: c.disclosure.clone(),
+        trust: c.trust.clone(),
+        resolution: history::Resolution {
+            entry: audit::Entry {
+                sequence: checkpoint.payload.sequence,
+                previous,
+                event,
+            },
+            checkpoint,
+        },
+    };
+    let pin = c.trust.registry.id();
+    let view = history::verify(&stored, &pin, 10002).unwrap();
+    assert_eq!(view.event_id, "event-1");
+    assert_eq!(view.event_record["trigger"]["co2_ppm"], 900);
+    assert!(history::verify(&stored, &pin, 10001).is_err()); // Exactly at resolution is not prior.
+    assert!(history::verify(&stored, &"00".repeat(32), 10002).is_err());
+    let mut forged = stored.clone();
+    forged
+        .disclosure
+        .stage
+        .selected_recommendation
+        .as_mut()
+        .unwrap()
+        .recommendation
+        .reasoning = "forged memory".into();
+    assert!(history::verify(&forged, &pin, 10002).is_err());
+    let mut forged = stored;
+    forged.resolution.entry.event.at_ms = 10000;
+    assert!(history::verify(&forged, &pin, 10002).is_err());
+    drop(journal);
+    std::fs::remove_dir_all(path).unwrap();
+}
 #[test]
 fn audit_detects_corruption_truncation_and_rollback_relative_to_external_pin() {
     let c = fixture(900, 500, Classification::Anomaly, false, false, false);

@@ -124,6 +124,9 @@ fn simulate(config: veri_adam_simulation::Config, output: &str) -> Result<bool, 
 }
 fn run(args: &[String]) -> Result<bool, String> {
     match args {
+        [cmd, registry, before] if cmd == "adam-history-check" => {
+            authenticated::history_check(registry, before)
+        }
         [cmd, release, record, trust, directory, pin] if cmd == "adam-release-check" => {
             authenticated::release_check(release, record, trust, directory, pin)
         }
