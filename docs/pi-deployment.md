@@ -1,5 +1,7 @@
 # Pi deployment handoff
 
+For the complete copy/install/native-build/two-device test procedure, follow [Using the two Raspberry Pis for tests now](../README.md#using-the-two-raspberry-pis-for-tests-now). It includes the private-package boundary, operator-pinned trust/requests/checkpoints, optional Mac-service SSH tunnels, expected rejection cases and result capture. These are instructions to execute, not evidence that either Pi has been deployed.
+
 No software or services on either Pi were changed during the connected-agent delivery. Read-only SSH checks to `ben@evidra.local` and `ben@gateway.local` failed hostname resolution. Current SSH IP addresses are needed before installation or deployment can proceed.
 
 Collect a fresh read-only inventory once reachable:

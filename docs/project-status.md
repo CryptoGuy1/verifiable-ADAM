@@ -8,6 +8,8 @@ Per the latest user instruction, actual weighted actors are connected and UI upd
 
 The private checker proves the weighted numerical predicate and authenticates ballots; it explicitly does not privately prove the whole ADAM process. Audit rollback protection requires an independently retained latest checkpoint. Weaviate/MiniLM history is now live-validated, including independent authentication of prior evidence and a required-store failure test. The corrected Qwen run received 0–4 verified prior events without repair/fallback; four valid decisions obtained durable authorization. A real write-refusal test withheld all four otherwise valid authorizations. Neither Pi .local name resolved; IP addresses were requested. No physical acquisition/deployment or efficiency advantage is claimed. The older demo coverage table below describes the legacy browser only and does not replace this current terminal/JSON status.
 
+The [Pi testing runbook](../README.md#using-the-two-raspberry-pis-for-tests-now) now documents native builds, sensor-free producer/checker tests, restricted exports, rejection/expiry tests and optional tunneled Mac inference/history. It does not mark Pi deployment, live acquisition or secure peer services complete.
+
 ## Working software
 
 - **Corrective ADAM decision stage:** a shared `decision` crate implements inverse-variance calibration, registered weighted fusion/dispersion, temporal Sensor voting, complete recommendations, selection, crew quorum, final assembly, repair/fallback and governance. It is exercised by `adam-run` and `adam-evaluate`; details and source boundaries are in [the decision-stage contract](../specs/adam-decision-stage.md).

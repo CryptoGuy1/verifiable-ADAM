@@ -8,6 +8,10 @@ This is a new project based on the accepted veri-ADAM proposal and its CO₂ exp
 
 This checklist records concerns to resolve during implementation. Unchecked items are open decisions, not completed capabilities. The structure below is a proposed starting architecture; no previous project code has been copied.
 
+## Pi testing instructions
+
+The [README runbook](README.md#using-the-two-raspberry-pis-for-tests-now) explains how to test the current build on the owned Pi 5/Pi 4: copy identical source, install the pinned toolchain, run native checks, generate on one Pi, independently verify on the other, optionally tunnel existing Mac model/history services, and archive test evidence. It distinguishes operator-trusted replay inputs from production provisioning and records live sensing/peer transport as unfinished. Documentation is not a completed hardware milestone.
+
 ## Connected-agent continuation
 
 The user requested actor integration and explicitly deferred UI work. The [connected runtime contract](specs/weighted-agent-runtime.md) records the delivered actor-owned signing, authenticated temporal support, real weighted private proof, v2 ordinary/dependency checks, restricted export and signed durable advisory-authorization gate. Rules and actual local Qwen runs pass the valid and withholding cases. Historical retrieval now passes live Weaviate/MiniLM validation, including independently verified signed historical evidence, 0–4 prior records in actual Qwen context and required-store failure withholding; SSH IPs are needed for Pi preparation. Physical acquisition, persistent device identities/secure peer services, full distributed recovery and matched confirmatory evaluation remain open. No novelty or hardware result is claimed.
